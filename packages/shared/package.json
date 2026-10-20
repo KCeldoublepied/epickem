@@ -1,0 +1,17 @@
+{
+  "name": "@epickem/shared",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Types du domaine, schémas de validation et client API partagés",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "epickem",
+  "private": true,
+  "description": "Plateforme de tournois et de pronostics en direct — projet PGE5",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "turbo run dev --filter=@epickem/web --filter=@epickem/api",
+    "dev:mobile": "pnpm --filter @epickem/mobile start",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "simulate": "pnpm --filter @epickem/simulator start"
+  },
+  "devDependencies": {
+    "turbo": "^2.11.9",
+    "typescript": "~5.9.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  }
+}
