@@ -1,0 +1,24 @@
+{
+  "name": "@epickem/mobile",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Application mobile Android (React Native / Expo)",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "prebuild": "expo prebuild --platform android",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@epickem/shared": "workspace:*",
+    "expo": "~58.0.16",
+    "expo-status-bar": "~58.0.3",
+    "react": "19.3.0",
+    "react-native": "0.88.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.3.0",
+    "typescript": "~5.9.3"
+  }
+}

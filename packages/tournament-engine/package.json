@@ -1,0 +1,20 @@
+{
+  "name": "@epickem/tournament-engine",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Moteur de tournois pur : formats, appariements, classements et barèmes",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@epickem/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3"
+  }
+}

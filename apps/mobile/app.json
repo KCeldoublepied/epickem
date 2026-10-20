@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "EPIck'em",
+    "slug": "epickem",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "platforms": ["android"],
+    "android": {
+      "package": "eu.epickem.app"
+    }
+  }
+}

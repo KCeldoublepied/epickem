@@ -1,0 +1,19 @@
+{
+  "name": "@epickem/simulator",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Simulateur de tournois et de spectateurs (CLI)",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@epickem/shared": "workspace:*",
+    "@epickem/tournament-engine": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.23.15",
+    "typescript": "~5.9.3"
+  }
+}
