@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Décisions d'architecture (ADR)
+    url: https://github.com/KCeldoublepied/epickem/tree/main/docs/adr
+    about: Consulter les choix techniques avant de proposer un changement d'architecture.
