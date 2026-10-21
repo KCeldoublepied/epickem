@@ -1,5 +1,5 @@
 name: Fonctionnalité
-description: Proposer une nouvelle fonctionnalité ou une amélioration
+description: Proposer une fonctionnalité ou une amélioration
 title: "feat: "
 labels: ["type:feature"]
 body:
@@ -7,15 +7,7 @@ body:
     id: need
     attributes:
       label: Besoin
-      description: Quel problème cela résout-il, et pour qui (administrateur, joueur, spectateur) ?
-    validations:
-      required: true
-
-  - type: textarea
-    id: proposal
-    attributes:
-      label: Proposition
-      description: Ce qu'il faudrait faire, concrètement.
+      description: Quel problème cela résout, et pour qui.
     validations:
       required: true
 
@@ -23,25 +15,7 @@ body:
     id: criteria
     attributes:
       label: Critères d'acceptation
-      description: Conditions vérifiables pour considérer l'issue terminée.
       value: |
-        - [ ]
         - [ ]
     validations:
       required: true
-
-  - type: checkboxes
-    id: quality
-    attributes:
-      label: Points à prévoir
-      options:
-        - label: Accessibilité (clavier, lecteur d'écran, contrastes)
-        - label: Tests
-        - label: Documentation (utilisateur ou technique)
-        - label: Nécessite une ADR (choix d'architecture)
-
-  - type: input
-    id: ref
-    attributes:
-      label: Référence du sujet
-      placeholder: "Ex. : 02-E Pronostics"
