@@ -1,0 +1,21 @@
+name: Fonctionnalité
+description: Proposer une fonctionnalité ou une amélioration
+title: "feat: "
+labels: ["type:feature"]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: Besoin
+      description: Quel problème cela résout, et pour qui.
+    validations:
+      required: true
+
+  - type: textarea
+    id: criteria
+    attributes:
+      label: Critères d'acceptation
+      value: |
+        - [ ]
+    validations:
+      required: true
