@@ -1,0 +1,25 @@
+# Contexte de build Docker : on n'envoie que les sources.
+.git
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+**/*.tsbuildinfo
+**/coverage
+**/*.log
+
+# Mobile : non conteneurisé (build APK dans la CI, voir ADR-0010)
+apps/mobile/android
+apps/mobile/ios
+apps/mobile/.expo
+
+# Secrets et configuration locale
+.env
+.env.*
+!.env.example
+
+# Fichiers sans utilité pour les images
+docs
+.vscode
+.idea
+docker-compose*.yml

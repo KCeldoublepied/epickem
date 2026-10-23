@@ -1,2 +1,51 @@
 # epickem
 Plateforme de tournois et de pronostics en direct - projet PGE5
+
+## Lancer la plateforme avec Docker
+
+Seul prérequis : [Docker](https://docs.docker.com/get-docker/) avec Docker Compose
+(sous Windows et macOS : Docker Desktop).
+
+```bash
+git clone https://github.com/KCeldoublepied/epickem.git
+cd epickem
+docker compose up --build
+```
+
+Le premier lancement construit les images (quelques minutes), les suivants sont rapides.
+
+| Service    | Adresse                      |
+|------------|------------------------------|
+| Site web   | http://localhost:3000        |
+| API        | http://localhost:4000/health |
+| PostgreSQL | `localhost:5432` (utilisateur, mot de passe et base : `epickem`) |
+| Redis      | `localhost:6379`             |
+
+Aucune configuration n'est nécessaire. Pour changer les identifiants ou les ports
+(par exemple si le port 5432 est déjà pris), copier `.env.example` en `.env` et l'adapter.
+
+Commandes utiles :
+
+```bash
+docker compose up -d --build       # lancer en arrière-plan
+docker compose ps                  # état des services (healthy = prêt)
+docker compose logs -f api         # suivre les logs d'un service
+docker compose down                # arrêter (les données sont conservées)
+docker compose down -v             # arrêter et effacer les données
+docker compose up -d postgres redis   # seulement la base et Redis, pour développer avec pnpm
+```
+
+## Développer sans Docker
+
+Prérequis : Node.js 22 et pnpm 10 (`npm install -g pnpm@10.28.0`).
+
+```bash
+pnpm install
+pnpm dev          # web (http://localhost:3000) et API (http://localhost:4000)
+pnpm dev:mobile   # application mobile (Expo)
+pnpm build        # compile tout le monorepo
+pnpm typecheck    # vérifie les types
+pnpm simulate     # lance le simulateur
+```
+
+Les décisions d'architecture sont documentées dans [`docs/adr/`](docs/adr/README.md).
