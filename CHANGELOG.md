@@ -14,3 +14,4 @@ Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) 
 - Lancement de toute la plateforme en une commande avec Docker Compose (#8).
 - Guide de contribution, code de conduite, licence et journal des modifications (#4, #11).
 - Modèle de données v1 avec Prisma 7 et PostgreSQL, documenté dans `docs/technique/modele-donnees.md` (#9).
+- Intégration continue GitHub Actions : migrations, lint, types, tests, build et images Docker à chaque PR (#6).

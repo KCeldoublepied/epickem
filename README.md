@@ -1,4 +1,7 @@
 # epickem
+
+[![CI](https://github.com/KCeldoublepied/epickem/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/KCeldoublepied/epickem/actions/workflows/ci.yml)
+
 Plateforme de tournois et de pronostics en direct - projet PGE5
 
 ## Lancer la plateforme avec Docker
