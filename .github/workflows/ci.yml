@@ -1,0 +1,105 @@
+# Intégration continue : lancée sur chaque pull request et à chaque push sur main.
+# Les deux jobs ci-dessous sont des vérifications obligatoires pour fusionner dans main
+# (Settings → Branches → règle main → « Require status checks to pass »).
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Une nouvelle poussée sur la même branche annule l'exécution précédente.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CI: true
+  TURBO_TELEMETRY_DISABLED: 1
+  NEXT_TELEMETRY_DISABLED: 1
+  CHECKPOINT_DISABLE: 1
+  PRISMA_HIDE_UPDATE_MESSAGE: 1
+
+jobs:
+  checks:
+    name: Lint, types, tests et build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: epickem
+          POSTGRES_PASSWORD: epickem
+          POSTGRES_DB: epickem
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U epickem -d epickem"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://epickem:epickem@localhost:5432/epickem
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v7
+
+      - name: Installer pnpm (version du package.json)
+        uses: pnpm/action-setup@v6
+
+      - name: Installer Node.js (version du .nvmrc)
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Installer les dépendances (lockfile figé)
+        run: pnpm install --frozen-lockfile
+
+      - name: Appliquer les migrations sur une base vierge
+        run: pnpm --filter @epickem/api db:deploy
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Vérifier les types
+        run: pnpm typecheck
+
+      - name: Tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  docker:
+    name: Images Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v7
+
+      - name: Construire et démarrer la plateforme
+        run: docker compose up --build --detach --wait --wait-timeout 180
+
+      - name: Vérifier l'API et le site
+        run: |
+          curl --fail --silent --show-error http://localhost:4000/health
+          curl --fail --silent --show-error --output /dev/null http://localhost:3000
+
+      - name: Logs en cas d'échec
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Arrêter la plateforme
+        if: always()
+        run: docker compose down --volumes
