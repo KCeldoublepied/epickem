@@ -17,12 +17,12 @@ docker compose up --build
 
 Le premier lancement construit les images (quelques minutes), les suivants sont rapides.
 
-| Service    | Adresse                      |
-|------------|------------------------------|
-| Site web   | http://localhost:3000        |
-| API        | http://localhost:4000/health |
+| Service    | Adresse                                                          |
+| ---------- | ---------------------------------------------------------------- |
+| Site web   | http://localhost:3000                                            |
+| API        | http://localhost:4000/health                                     |
 | PostgreSQL | `localhost:5432` (utilisateur, mot de passe et base : `epickem`) |
-| Redis      | `localhost:6379`             |
+| Redis      | `localhost:6379`                                                 |
 
 Aucune configuration n'est nécessaire. Pour changer les identifiants ou les ports
 (par exemple si le port 5432 est déjà pris), copier `.env.example` en `.env` et l'adapter.
@@ -48,6 +48,8 @@ pnpm dev          # web (http://localhost:3000) et API (http://localhost:4000)
 pnpm dev:mobile   # application mobile (Expo)
 pnpm build        # compile tout le monorepo
 pnpm typecheck    # vérifie les types
+pnpm lint         # vérifie le code (ESLint)
+pnpm format       # met en forme le code (Prettier)
 pnpm simulate     # lance le simulateur
 ```
 

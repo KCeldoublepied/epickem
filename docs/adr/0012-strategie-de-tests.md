@@ -10,14 +10,14 @@ Le sujet exige des tests couvrant au minimum : génération des arbres pour chaq
 
 ## Décision
 
-| Niveau | Outil | Cible |
-|---|---|---|
-| Unitaire | **Vitest** | `tournament-engine`, `shared` (schémas, barèmes), services NestJS |
-| Intégration API | **Vitest + Supertest**, base PostgreSQL de test (conteneur) | Routes, guards, verrouillage, transactions de recalcul |
-| Connecteur | **Vitest** + réponses start.gg enregistrées (fixtures) / MSW | Conversion vers le modèle normalisé, cache, mode dégradé |
-| Mobile | **Jest + React Native Testing Library** | Logique et écrans, sans émulateur |
-| Bout en bout web | **Playwright** + `@axe-core/playwright` | Parcours clés et accessibilité |
-| Charge | **k6** (ADR-0015) | Spectateurs simultanés, délai de mise à jour |
+| Niveau           | Outil                                                        | Cible                                                             |
+| ---------------- | ------------------------------------------------------------ | ----------------------------------------------------------------- |
+| Unitaire         | **Vitest**                                                   | `tournament-engine`, `shared` (schémas, barèmes), services NestJS |
+| Intégration API  | **Vitest + Supertest**, base PostgreSQL de test (conteneur)  | Routes, guards, verrouillage, transactions de recalcul            |
+| Connecteur       | **Vitest** + réponses start.gg enregistrées (fixtures) / MSW | Conversion vers le modèle normalisé, cache, mode dégradé          |
+| Mobile           | **Jest + React Native Testing Library**                      | Logique et écrans, sans émulateur                                 |
+| Bout en bout web | **Playwright** + `@axe-core/playwright`                      | Parcours clés et accessibilité                                    |
+| Charge           | **k6** (ADR-0015)                                            | Spectateurs simultanés, délai de mise à jour                      |
 
 - `pnpm test` à la racine lance tous les tests via Turborepo ; `pnpm --filter <app> test -- <motif>` lance un seul test (documenté dans le guide de prise en main).
 - Aucun test ne dépend du réseau ; les données de test sont générées de façon déterministe (seed fixe).

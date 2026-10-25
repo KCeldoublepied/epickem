@@ -1,0 +1,13 @@
+# Fins de ligne LF dans le dépôt, quel que soit le système (Windows compris).
+* text=auto eol=lf
+
+# Fichiers binaires
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.apk binary

@@ -70,6 +70,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Formatage
+        run: pnpm format:check
+
       - name: Vérifier les types
         run: pnpm typecheck
 

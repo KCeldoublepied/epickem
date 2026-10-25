@@ -32,14 +32,14 @@ Nous utilisons un flux simple, basé sur des branches courtes :
   <type>/<numéro-issue>-<description-courte>
   ```
 
-  | Préfixe | Usage | Exemple |
-  |---|---|---|
-  | `feat/` | nouvelle fonctionnalité | `feat/17-verrouillage-pronostics` |
-  | `fix/` | correction de bug | `fix/42-arbre-exempts` |
-  | `docs/` | documentation | `docs/1-adr` |
-  | `chore/` | outillage, configuration, CI | `chore/6-ci` |
-  | `test/` | ajout ou correction de tests | `test/29-ronde-suisse` |
-  | `refactor/` | restructuration sans changement de comportement | `refactor/9-schema-prisma` |
+  | Préfixe     | Usage                                           | Exemple                           |
+  | ----------- | ----------------------------------------------- | --------------------------------- |
+  | `feat/`     | nouvelle fonctionnalité                         | `feat/17-verrouillage-pronostics` |
+  | `fix/`      | correction de bug                               | `fix/42-arbre-exempts`            |
+  | `docs/`     | documentation                                   | `docs/1-adr`                      |
+  | `chore/`    | outillage, configuration, CI                    | `chore/6-ci`                      |
+  | `test/`     | ajout ou correction de tests                    | `test/29-ronde-suisse`            |
+  | `refactor/` | restructuration sans changement de comportement | `refactor/9-schema-prisma`        |
 
 - Les branches vivent quelques jours au plus. Une fois la PR fusionnée, la branche est supprimée.
 
@@ -91,7 +91,25 @@ docs(adr): ajoute la décision sur l'hébergement
 chore(infra): lance la plateforme avec Docker Compose
 ```
 
-Un hook vérifiera automatiquement ce format (issue #3).
+Un hook Git (`commit-msg`) refuse tout commit dont le message ne respecte pas ce format.
+
+## Qualité du code
+
+- **ESLint** (`eslint.config.mjs`) : règles TypeScript, React, hooks et Next.js, et **accessibilité** (`jsx-a11y`, en mode strict, ADR-0011) pour le site web.
+- **Prettier** (`.prettierrc.json`) : mise en forme automatique, guillemets simples, 100 caractères par ligne.
+- **Hooks Git** installés automatiquement par `pnpm install` (Husky) :
+  - `pre-commit` : ESLint et Prettier corrigent les fichiers modifiés avant chaque commit (lint-staged) ;
+  - `commit-msg` : vérifie le format du message (commitlint).
+
+```bash
+pnpm lint           # signale les problèmes
+pnpm lint:fix       # corrige ce qui peut l'être automatiquement
+pnpm format         # met en forme tout le dépôt
+pnpm format:check   # vérifie la mise en forme (lancé par la CI)
+```
+
+La CI lance `pnpm lint` et `pnpm format:check` : une PR qui ne les passe pas ne peut pas être fusionnée.
+Dans VS Code, installez les extensions ESLint et Prettier et activez « Format on Save ».
 
 ## Pull requests
 
@@ -110,12 +128,12 @@ Le projet suit le [versionnage sémantique](https://semver.org/lang/fr/) `MAJEUR
 - **0.x** pendant le développement : le produit n'est pas encore stable.
 - Un tag est posé sur `main` à chaque étape clé, et le [CHANGELOG](CHANGELOG.md) est mis à jour dans la même PR :
 
-| Tag | Étape |
-|---|---|
-| `v0.1.0` | M0 — Fondations |
-| `v0.2.0` | M1 — MVP de bout en bout (follow-up) |
-| `v0.3.0` | M2 — Formats et Pick'em |
-| `v0.4.0` | M3 — Mobile, dashboard et simulateur |
+| Tag      | Étape                                  |
+| -------- | -------------------------------------- |
+| `v0.1.0` | M0 — Fondations                        |
+| `v0.2.0` | M1 — MVP de bout en bout (follow-up)   |
+| `v0.3.0` | M2 — Formats et Pick'em                |
+| `v0.4.0` | M3 — Mobile, dashboard et simulateur   |
 | `v1.0.0` | M4 — Version rendue pour la soutenance |
 
 ```bash

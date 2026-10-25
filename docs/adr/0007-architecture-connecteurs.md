@@ -20,7 +20,7 @@ Pattern **Adapter** avec une interface `TournamentConnector` définie dans `pack
 
 ```ts
 interface TournamentConnector {
-  readonly id: string;                         // "startgg"
+  readonly id: string; // "startgg"
   readonly capabilities: ConnectorCapabilities; // personnages, cartes, manches…
   search(query: string): Promise<ExternalTournamentSummary[]>;
   resolveUrl(url: string): Promise<ExternalTournamentRef | null>;
