@@ -17,7 +17,7 @@ Chaque résultat fait avancer l'arbre et met à jour pronostics, Pick'em et clas
 
 ## Décision
 
-**Socket.io** via les *gateways* NestJS, avec l'**adaptateur Redis** (`@socket.io/redis-adapter`).
+**Socket.io** via les _gateways_ NestJS, avec l'**adaptateur Redis** (`@socket.io/redis-adapter`).
 
 - Une salle par tournoi (`tournament:{id}`) et par match (`match:{id}`) ; le client ne reçoit que ce qu'il suit.
 - Événements typés dans `packages/shared` : `match.updated`, `bracket.updated`, `leaderboard.updated`, `predictions.distribution`, `pickem.resolved`.

@@ -13,10 +13,10 @@ Sur un runner Ubuntu, avec un service PostgreSQL 16 :
 1. installe pnpm (version du `package.json`) et Node.js (version du `.nvmrc`), avec le cache du store pnpm ;
 2. `pnpm install --frozen-lockfile` : échoue si `pnpm-lock.yaml` n'est pas à jour ;
 3. applique toutes les migrations Prisma sur une base vierge (`db:deploy`) : vérifie qu'elles s'enchaînent sans erreur ;
-4. `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` sur tout le monorepo, via Turborepo.
+4. `pnpm lint` (ESLint) et `pnpm format:check` (Prettier) ;
+5. `pnpm typecheck`, `pnpm test` et `pnpm build` sur tout le monorepo, via Turborepo.
 
-`lint` et `test` ne font encore rien : ils prendront automatiquement en compte la configuration du lint (#3)
-et les premiers tests dès qu'ils seront ajoutés aux packages.
+`test` ne fait encore rien : il prendra automatiquement en compte les premiers tests dès qu'ils seront ajoutés aux packages.
 
 ### « Images Docker »
 
@@ -27,21 +27,21 @@ automatisé. En cas d'échec, les logs des conteneurs sont affichés dans le job
 ## Règle de fusion
 
 Les deux jobs sont des **vérifications obligatoires** sur `main` : une PR dont la CI échoue ne peut pas être fusionnée.
-Elles se configurent dans *Settings → Branches → règle `main` → Require status checks to pass before merging*,
+Elles se configurent dans _Settings → Branches → règle `main` → Require status checks to pass before merging_,
 en sélectionnant « Lint, types, tests et build » et « Images Docker ».
 
 ## Lancer les mêmes vérifications en local
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm lint && pnpm typecheck && pnpm test && pnpm build
+pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build
 docker compose up --build --wait
 ```
 
 ## Secrets
 
 Le pipeline n'utilise aucun secret pour l'instant. Les futurs secrets (déploiement, jeton start.gg, clé de signature
-Android) seront ajoutés dans *Settings → Secrets and variables → Actions*, jamais dans le dépôt.
+Android) seront ajoutés dans _Settings → Secrets and variables → Actions_, jamais dans le dépôt.
 
 ## À venir
 

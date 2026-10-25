@@ -16,27 +16,29 @@ L'application mobile doit permettre de suivre les tournois en direct, pronostiqu
 
 ## Options envisagées
 
-| Option | Respect du sujet | Accessibilité lecteur d'écran | Build en CI | Partage avec le reste |
-|---|---|---|---|---|
-| **React Native (Expo)** | Oui, rendu en composants natifs | Composants natifs de l'OS, propriétés `accessibilityLabel`, `accessibilityRole`, `accessibilityLiveRegion` | APK sur runner Linux | Types, schémas, client API, hooks TanStack Query, client Socket.io |
-| **Flutter** | Oui, rendu natif via son moteur | Arbre sémantique à renseigner explicitement (`Semantics`) | APK sur runner Linux | Aucun (Dart) |
-| **Kotlin natif (Compose)** | Oui | Excellente | APK sur runner Linux | Aucun ; un langage de plus |
-| **Swift natif (SwiftUI)** | Oui | Excellente | Runner macOS requis, plus coûteux | Aucun ; un langage de plus |
-| **Ionic / Capacitor / PWA / WebView** | **Non, interdit** | — | — | — |
+| Option                                | Respect du sujet                | Accessibilité lecteur d'écran                                                                              | Build en CI                       | Partage avec le reste                                              |
+| ------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------ |
+| **React Native (Expo)**               | Oui, rendu en composants natifs | Composants natifs de l'OS, propriétés `accessibilityLabel`, `accessibilityRole`, `accessibilityLiveRegion` | APK sur runner Linux              | Types, schémas, client API, hooks TanStack Query, client Socket.io |
+| **Flutter**                           | Oui, rendu natif via son moteur | Arbre sémantique à renseigner explicitement (`Semantics`)                                                  | APK sur runner Linux              | Aucun (Dart)                                                       |
+| **Kotlin natif (Compose)**            | Oui                             | Excellente                                                                                                 | APK sur runner Linux              | Aucun ; un langage de plus                                         |
+| **Swift natif (SwiftUI)**             | Oui                             | Excellente                                                                                                 | Runner macOS requis, plus coûteux | Aucun ; un langage de plus                                         |
+| **Ionic / Capacitor / PWA / WebView** | **Non, interdit**               | —                                                                                                          | —                                 | —                                                                  |
 
 ## Décision
 
-**React Native avec Expo (workflow *prebuild*)**, ciblant **Android**.
+**React Native avec Expo (workflow _prebuild_)**, ciblant **Android**.
 
 **Pourquoi ce n'est pas un site emballé** : React Native n'affiche aucune page web. Le code TypeScript pilote de vrais composants Android (`android.view.View`, `TextView`…) ; il n'y a ni WebView ni HTML. L'application ne charge pas le site, elle parle à l'API comme le site le fait. Aucun composant WebView ne sera utilisé dans l'application.
 
 **Pourquoi Android** :
+
 - l'APK se construit sur les runners Linux gratuits de GitHub Actions, alors qu'un build iOS exige un runner macOS ;
 - l'APK s'installe directement sur un téléphone Android ou un émulateur, sans compte développeur, ce qui facilite la démo où le jury pronostique sur mobile.
 
 **Pourquoi React Native plutôt que Flutter** : les trois membres du groupe peuvent contribuer au web et au mobile dans le même langage, une grande partie de la logique client est partagée via `packages/shared`, et l'accessibilité repose sur les composants natifs d'Android.
 
 **Mise en œuvre** :
+
 - navigation : React Navigation ; données : TanStack Query ; temps réel : client Socket.io partagé ;
 - notifications : Expo Notifications ;
 - le dossier `android/` est **généré** par `npx expo prebuild` et non versionné ;

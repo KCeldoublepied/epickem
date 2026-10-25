@@ -9,6 +9,7 @@ ENV PNPM_HOME=/pnpm \
     PATH=/pnpm:$PATH \
     CI=true \
     TURBO_TELEMETRY_DISABLED=1 \
+    HUSKY=0 \
     NEXT_TELEMETRY_DISABLED=1
 # OpenSSL : requis par le moteur de migrations de Prisma.
 RUN apt-get update -y \

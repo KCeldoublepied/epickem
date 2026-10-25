@@ -1,7 +1,7 @@
 name: Fonctionnalité
 description: Proposer une fonctionnalité ou une amélioration
-title: "feat: "
-labels: ["type:feature"]
+title: 'feat: '
+labels: ['type:feature']
 body:
   - type: textarea
     id: need

@@ -1,7 +1,7 @@
 name: Bug
 description: Signaler un comportement incorrect
-title: "fix: "
-labels: ["bug"]
+title: 'fix: '
+labels: ['bug']
 body:
   - type: textarea
     id: description

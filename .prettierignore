@@ -1,0 +1,13 @@
+# Fichiers générés ou gérés par des outils
+pnpm-lock.yaml
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/generated
+**/next-env.d.ts
+apps/api/prisma/migrations
+apps/mobile/.expo
+apps/mobile/android
+apps/mobile/ios

@@ -27,4 +27,4 @@ Nous utilisons des ADR en Markdown dans `docs/adr/`, une par décision, sur le m
 ## Références
 
 - Sujet : blocs 01-B, 03-C (Décisions).
-- Michael Nygard, *Documenting Architecture Decisions* (2011).
+- Michael Nygard, _Documenting Architecture Decisions_ (2011).
