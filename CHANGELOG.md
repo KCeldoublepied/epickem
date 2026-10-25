@@ -11,4 +11,6 @@ Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) 
 - Journal des décisions d'architecture dans `docs/adr/` (#1).
 - Monorepo TypeScript : Turborepo, pnpm, applications web, API, mobile, simulateur et packages partagés (#2).
 - Protection de la branche `main` (#7).
+- Lancement de toute la plateforme en une commande avec Docker Compose (#8).
 - Guide de contribution, code de conduite, licence et journal des modifications (#4, #11).
+- Modèle de données v1 avec Prisma 7 et PostgreSQL, documenté dans `docs/technique/modele-donnees.md` (#9).

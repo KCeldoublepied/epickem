@@ -1,0 +1,624 @@
+// Modèle de données v1 d'EPIck'em.
+// Documentation : docs/technique/modele-donnees.md — décisions : ADR-0004 et ADR-0009.
+//
+// Conventions :
+// - identifiants UUID, dates en UTC (timestamptz) ;
+// - noms de modèles et de champs en anglais (comme le code), tables en snake_case ;
+// - les données variables selon le jeu ou le tournoi sont en JSONB, validées par Zod côté API.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+  runtime      = "nodejs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Comptes
+// ---------------------------------------------------------------------------
+
+enum Role {
+  ADMIN
+  PLAYER
+  SPECTATOR
+}
+
+/// Compte de la plateforme (administrateur, joueur ou spectateur).
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  displayName  String   @map("display_name")
+  passwordHash String   @map("password_hash")
+  role         Role     @default(SPECTATOR)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organizedTournaments Tournament[]   @relation("TournamentOrganizer")
+  captainOf            Team[]         @relation("TeamCaptain")
+  teamMemberships      TeamMember[]
+  participants         Participant[]
+  registrations        Registration[]
+  predictions          Prediction[]
+  pickemAnswers        PickemAnswer[]
+  pointsEntries        PointsEntry[]
+  auditLogs            AuditLog[]
+
+  @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// Jeux et statistiques
+// ---------------------------------------------------------------------------
+
+/// Jeu (ou sport) sur lequel portent les tournois.
+model Game {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  stats       GameStat[]
+  tournaments Tournament[]
+  teams       Team[]
+
+  @@map("games")
+}
+
+enum StatType {
+  NUMBER // kills, buts, durée…
+  BOOLEAN // MVP, premier sang…
+  CHOICE // personnage, carte : valeur dans une liste configurable
+  TEXT
+}
+
+enum StatScope {
+  MATCH_GAME // une valeur par manche (ex. carte jouée)
+  PARTICIPANT // une valeur par participant et par manche (ex. kills, personnage)
+}
+
+/// Statistique relevée à chaque manche pour un jeu donné.
+model GameStat {
+  id      String    @id @default(uuid()) @db.Uuid
+  gameId  String    @map("game_id") @db.Uuid
+  key     String /// identifiant stable utilisé dans les JSON de manche (ex. "kills")
+  label   String
+  type    StatType
+  scope   StatScope @default(PARTICIPANT)
+  /// Valeurs possibles pour le type CHOICE (personnages, cartes…).
+  options String[]
+  unit    String?
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, key])
+  @@map("game_stats")
+}
+
+// ---------------------------------------------------------------------------
+// Tournois et sources externes
+// ---------------------------------------------------------------------------
+
+enum TournamentStatus {
+  DRAFT
+  REGISTRATION
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum LocationType {
+  ONLINE
+  ONSITE
+  HYBRID
+}
+
+enum Visibility {
+  PUBLIC
+  UNLISTED
+  PRIVATE
+}
+
+enum ParticipantType {
+  SOLO
+  TEAM
+}
+
+enum RegistrationMode {
+  OPEN
+  APPROVAL
+}
+
+/// Saison regroupant des tournois, pour les classements par saison.
+model Season {
+  id       String   @id @default(uuid()) @db.Uuid
+  name     String
+  startsAt DateTime @map("starts_at") @db.Timestamptz(3)
+  endsAt   DateTime @map("ends_at") @db.Timestamptz(3)
+
+  tournaments Tournament[]
+
+  @@map("seasons")
+}
+
+/// Tournoi interne ou importé.
+model Tournament {
+  id                   String           @id @default(uuid()) @db.Uuid
+  gameId               String           @map("game_id") @db.Uuid
+  organizerId          String?          @map("organizer_id") @db.Uuid
+  seasonId             String?          @map("season_id") @db.Uuid
+  /// Renseigné si le tournoi est importé : il est alors en lecture seule.
+  sourceId             String?          @unique @map("source_id") @db.Uuid
+  name                 String
+  slug                 String           @unique
+  description          String?
+  rules                String?
+  status               TournamentStatus @default(DRAFT)
+  visibility           Visibility       @default(PUBLIC)
+  startsAt             DateTime?        @map("starts_at") @db.Timestamptz(3)
+  endsAt               DateTime?        @map("ends_at") @db.Timestamptz(3)
+  locationType         LocationType     @default(ONLINE) @map("location_type")
+  location             String?
+  participantType      ParticipantType  @default(SOLO) @map("participant_type")
+  teamSizeMin          Int?             @map("team_size_min")
+  teamSizeMax          Int?             @map("team_size_max")
+  maxParticipants      Int?             @map("max_participants")
+  registrationMode     RegistrationMode @default(OPEN) @map("registration_mode")
+  registrationOpensAt  DateTime?        @map("registration_opens_at") @db.Timestamptz(3)
+  registrationClosesAt DateTime?        @map("registration_closes_at") @db.Timestamptz(3)
+  checkInOpensAt       DateTime?        @map("check_in_opens_at") @db.Timestamptz(3)
+  /// Définition des champs d'inscription personnalisés (libellé, type, obligatoire…).
+  customFields         Json             @default("[]") @map("custom_fields")
+  /// Barème des pronostics par défaut (points, bonus score exact, multiplicateur par tour).
+  scoring              Json             @default("{}")
+  createdAt            DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  game            Game             @relation(fields: [gameId], references: [id])
+  organizer       User?            @relation("TournamentOrganizer", fields: [organizerId], references: [id], onDelete: SetNull)
+  season          Season?          @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  source          ExternalSource?  @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  stages          Stage[]
+  participants    Participant[]
+  registrations   Registration[]
+  pickemQuestions PickemQuestion[]
+  pointsEntries   PointsEntry[]
+
+  @@index([gameId])
+  @@index([seasonId])
+  @@map("tournaments")
+}
+
+enum SyncStatus {
+  OK
+  PENDING
+  FAILED
+}
+
+/// Source externe d'un tournoi importé (start.gg ou autre connecteur, ADR-0007).
+model ExternalSource {
+  id           String     @id @default(uuid()) @db.Uuid
+  connector    String /// identifiant du connecteur, ex. "startgg"
+  externalId   String     @map("external_id")
+  url          String
+  syncStatus   SyncStatus @default(PENDING) @map("sync_status")
+  lastSyncedAt DateTime?  @map("last_synced_at") @db.Timestamptz(3)
+  lastError    String?    @map("last_error")
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  tournament Tournament?
+
+  @@unique([connector, externalId])
+  @@map("external_sources")
+}
+
+// ---------------------------------------------------------------------------
+// Étapes et matchs
+// ---------------------------------------------------------------------------
+
+enum StageFormat {
+  SINGLE_ELIMINATION
+  DOUBLE_ELIMINATION
+  ROUND_ROBIN
+  SWISS
+  FREE_FOR_ALL
+}
+
+enum StageStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum PredictionMode {
+  MATCH // match par match
+  BRACKET // arbre complet avant le début de l'étape
+  BOTH
+}
+
+/// Étape d'un tournoi (poules, puis arbre…), avec son format.
+model Stage {
+  id             String         @id @default(uuid()) @db.Uuid
+  tournamentId   String         @map("tournament_id") @db.Uuid
+  order          Int /// position de l'étape dans le tournoi (1, 2…)
+  name           String
+  format         StageFormat
+  status         StageStatus    @default(PENDING)
+  predictionMode PredictionMode @default(MATCH) @map("prediction_mode")
+  /// Réglages : BO par tour, départage, seeding, nombre de rondes suisses,
+  /// points FFA, règles de qualification vers l'étape suivante…
+  settings       Json           @default("{}")
+  startsAt       DateTime?      @map("starts_at") @db.Timestamptz(3)
+  /// Verrouillage des pronostics « arbre complet » de l'étape.
+  bracketLockAt  DateTime?      @map("bracket_lock_at") @db.Timestamptz(3)
+
+  tournament      Tournament       @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  matches         Match[]
+  predictions     Prediction[]
+  pickemQuestions PickemQuestion[]
+
+  @@unique([tournamentId, order])
+  @@map("stages")
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum BracketSide {
+  WINNERS
+  LOSERS
+  GRAND_FINAL
+}
+
+/// Match d'une étape, entre deux participants (duel) ou plus (FFA).
+model Match {
+  id                String       @id @default(uuid()) @db.Uuid
+  stageId           String       @map("stage_id") @db.Uuid
+  /// Tour (ou ronde suisse) dans l'étape, à partir de 1.
+  round             Int
+  /// Position du match dans le tour, à partir de 1.
+  position          Int
+  bracketSide       BracketSide? @map("bracket_side")
+  /// Poule (round robin) : "A", "B"…
+  groupLabel        String?      @map("group_label")
+  bestOf            Int          @default(1) @map("best_of")
+  status            MatchStatus  @default(SCHEDULED)
+  scheduledAt       DateTime?    @map("scheduled_at") @db.Timestamptz(3)
+  /// Les pronostics sont refusés à partir de cette date (horloge du serveur).
+  predictionsLockAt DateTime?    @map("predictions_lock_at") @db.Timestamptz(3)
+  startedAt         DateTime?    @map("started_at") @db.Timestamptz(3)
+  completedAt       DateTime?    @map("completed_at") @db.Timestamptz(3)
+  station           String? /// poste, table ou terrain
+  /// Match où va le vainqueur, et le perdant en double élimination.
+  winnerNextMatchId String?      @map("winner_next_match_id") @db.Uuid
+  loserNextMatchId  String?      @map("loser_next_match_id") @db.Uuid
+  externalId        String?      @map("external_id")
+
+  stage           Stage              @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  winnerNextMatch Match?             @relation("WinnerNext", fields: [winnerNextMatchId], references: [id], onDelete: SetNull)
+  loserNextMatch  Match?             @relation("LoserNext", fields: [loserNextMatchId], references: [id], onDelete: SetNull)
+  winnerFrom      Match[]            @relation("WinnerNext")
+  loserFrom       Match[]            @relation("LoserNext")
+  participants    MatchParticipant[]
+  games           MatchGame[]
+  predictions     Prediction[]
+
+  // Pas de contrainte d'unicité sur (étape, côté, poule, tour, position) : bracketSide et
+  // groupLabel peuvent être vides, et PostgreSQL considère deux NULL comme différents.
+  // L'unicité est garantie par le moteur de tournois (ADR-0008).
+  @@index([stageId, round, position])
+  @@index([stageId, status])
+  @@map("matches")
+}
+
+/// Place d'un participant dans un match (2 places en duel, N en FFA).
+model MatchParticipant {
+  id            String   @id @default(uuid()) @db.Uuid
+  matchId       String   @map("match_id") @db.Uuid
+  /// Vide tant que le qualifié n'est pas connu (match d'un tour suivant).
+  participantId String?  @map("participant_id") @db.Uuid
+  slot          Int /// 1, 2… (ordre d'affichage)
+  isBye         Boolean  @default(false) @map("is_bye")
+  score         Int? /// manches gagnées (duel) ou score
+  placement     Int? /// classement dans le match (FFA)
+  points        Int? /// points de placement (FFA)
+  isWinner      Boolean? @map("is_winner")
+
+  match       Match        @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  participant Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull)
+
+  @@unique([matchId, slot])
+  @@unique([matchId, participantId])
+  @@index([participantId])
+  @@map("match_participants")
+}
+
+/// Manche d'un match (une game d'un BO3, une carte…), avec ses statistiques.
+model MatchGame {
+  id                  String    @id @default(uuid()) @db.Uuid
+  matchId             String    @map("match_id") @db.Uuid
+  number              Int /// 1, 2, 3…
+  winnerParticipantId String?   @map("winner_participant_id") @db.Uuid
+  /// Valeurs des GameStat : { "match": { "map": "Dust2" },
+  /// "participants": { "<participantId>": { "kills": 21, "character": "Jett" } } }
+  stats               Json      @default("{}")
+  completedAt         DateTime? @map("completed_at") @db.Timestamptz(3)
+
+  match  Match        @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  winner Participant? @relation(fields: [winnerParticipantId], references: [id], onDelete: SetNull)
+
+  @@unique([matchId, number])
+  @@map("match_games")
+}
+
+// ---------------------------------------------------------------------------
+// Équipes, participants et inscriptions
+// ---------------------------------------------------------------------------
+
+/// Équipe créée par un capitaine, réutilisable d'un tournoi à l'autre.
+model Team {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String
+  tag        String?
+  gameId     String?  @map("game_id") @db.Uuid
+  captainId  String   @map("captain_id") @db.Uuid
+  /// Code de l'invitation par lien.
+  inviteCode String   @unique @default(uuid()) @map("invite_code")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  game          Game?          @relation(fields: [gameId], references: [id], onDelete: SetNull)
+  captain       User           @relation("TeamCaptain", fields: [captainId], references: [id])
+  members       TeamMember[]
+  participants  Participant[]
+  registrations Registration[]
+
+  @@map("teams")
+}
+
+enum TeamRole {
+  STARTER
+  SUBSTITUTE
+}
+
+/// Membre d'une équipe (titulaire ou remplaçant).
+model TeamMember {
+  teamId   String   @map("team_id") @db.Uuid
+  userId   String   @map("user_id") @db.Uuid
+  role     TeamRole @default(STARTER)
+  joinedAt DateTime @default(now()) @map("joined_at") @db.Timestamptz(3)
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, userId])
+  @@map("team_members")
+}
+
+enum ParticipantStatus {
+  ACTIVE
+  WITHDRAWN
+  DISQUALIFIED
+}
+
+/// Joueur ou équipe engagé dans un tournoi. Pour un tournoi importé,
+/// le participant n'a pas forcément de compte sur la plateforme.
+model Participant {
+  id           String            @id @default(uuid()) @db.Uuid
+  tournamentId String            @map("tournament_id") @db.Uuid
+  displayName  String            @map("display_name")
+  userId       String?           @map("user_id") @db.Uuid
+  teamId       String?           @map("team_id") @db.Uuid
+  seed         Int?
+  status       ParticipantStatus @default(ACTIVE)
+  externalId   String?           @map("external_id")
+
+  tournament    Tournament         @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user          User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  team          Team?              @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  registration  Registration?
+  matchSlots    MatchParticipant[]
+  gamesWon      MatchGame[]
+  predictedWins Prediction[]
+
+  @@unique([tournamentId, userId])
+  @@unique([tournamentId, teamId])
+  @@unique([tournamentId, externalId])
+  @@map("participants")
+}
+
+enum RegistrationStatus {
+  PENDING
+  ACCEPTED
+  WAITLISTED
+  REJECTED
+  CANCELLED
+}
+
+/// Inscription d'un joueur ou d'une équipe à un tournoi.
+model Registration {
+  id                String             @id @default(uuid()) @db.Uuid
+  tournamentId      String             @map("tournament_id") @db.Uuid
+  userId            String?            @map("user_id") @db.Uuid
+  teamId            String?            @map("team_id") @db.Uuid
+  /// Créé quand l'inscription est acceptée.
+  participantId     String?            @unique @map("participant_id") @db.Uuid
+  status            RegistrationStatus @default(PENDING)
+  waitlistPosition  Int?               @map("waitlist_position")
+  /// Réponses aux champs personnalisés du tournoi.
+  customFieldValues Json               @default("{}") @map("custom_field_values")
+  checkedInAt       DateTime?          @map("checked_in_at") @db.Timestamptz(3)
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  tournament  Tournament   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user        User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team        Team?        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  participant Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull)
+
+  @@unique([tournamentId, userId])
+  @@unique([tournamentId, teamId])
+  @@index([tournamentId, status])
+  @@map("registrations")
+}
+
+// ---------------------------------------------------------------------------
+// Pronostics et Pick'em
+// ---------------------------------------------------------------------------
+
+enum PredictionKind {
+  MATCH // pronostic fait avant le match
+  BRACKET // pronostic fait dans l'arbre complet, avant l'étape
+}
+
+enum ResolutionStatus {
+  PENDING
+  CORRECT
+  PARTIAL // bon vainqueur, mauvais score
+  WRONG
+  VOID // annulé (match annulé, donnée manquante)
+}
+
+/// Pronostic d'un spectateur sur un match : vainqueur et, éventuellement, score exact.
+model Prediction {
+  id                String           @id @default(uuid()) @db.Uuid
+  userId            String           @map("user_id") @db.Uuid
+  stageId           String           @map("stage_id") @db.Uuid
+  matchId           String           @map("match_id") @db.Uuid
+  kind              PredictionKind   @default(MATCH)
+  predictedWinnerId String?          @map("predicted_winner_id") @db.Uuid
+  /// Score exact pronostiqué : { "<participantId>": 2, "<participantId>": 1 }.
+  predictedScore    Json?            @map("predicted_score")
+  status            ResolutionStatus @default(PENDING)
+  pointsAwarded     Int?             @map("points_awarded")
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stage           Stage         @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  match           Match         @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  predictedWinner Participant?  @relation(fields: [predictedWinnerId], references: [id], onDelete: SetNull)
+  pointsEntries   PointsEntry[]
+
+  @@unique([userId, matchId, kind])
+  @@index([matchId])
+  @@map("predictions")
+}
+
+enum PickemTemplate {
+  MOST_PICKED // le plus choisi (personnage, carte…)
+  TOP_STAT // meilleur sur une statistique
+  TOTAL // total d'une statistique (plus ou moins que…)
+  RANKING // classement final
+  YES_NO
+}
+
+enum PickemStatus {
+  OPEN
+  CLOSED
+  RESOLVED
+  CANCELLED
+}
+
+/// Question de Pick'em d'un tournoi.
+model PickemQuestion {
+  id           String         @id @default(uuid()) @db.Uuid
+  tournamentId String         @map("tournament_id") @db.Uuid
+  stageId      String?        @map("stage_id") @db.Uuid
+  template     PickemTemplate
+  prompt       String
+  /// Paramètres du modèle : statistique visée, seuil, périmètre…
+  config       Json           @default("{}")
+  /// Réponses proposées, si la question est à choix.
+  choices      Json?
+  points       Int            @default(1)
+  closesAt     DateTime       @map("closes_at") @db.Timestamptz(3)
+  status       PickemStatus   @default(OPEN)
+  /// Bonne réponse calculée à partir des résultats.
+  resolution   Json?
+  resolvedAt   DateTime?      @map("resolved_at") @db.Timestamptz(3)
+  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  tournament Tournament     @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  stage      Stage?         @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  answers    PickemAnswer[]
+
+  @@index([tournamentId, status])
+  @@map("pickem_questions")
+}
+
+/// Réponse d'un spectateur à une question de Pick'em.
+model PickemAnswer {
+  id            String           @id @default(uuid()) @db.Uuid
+  questionId    String           @map("question_id") @db.Uuid
+  userId        String           @map("user_id") @db.Uuid
+  value         Json
+  status        ResolutionStatus @default(PENDING)
+  pointsAwarded Int?             @map("points_awarded")
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  question      PickemQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pointsEntries PointsEntry[]
+
+  @@unique([questionId, userId])
+  @@map("pickem_answers")
+}
+
+// ---------------------------------------------------------------------------
+// Classements et historique (ADR-0009)
+// ---------------------------------------------------------------------------
+
+enum PointsReason {
+  PREDICTION
+  PICKEM
+  ADJUSTMENT
+}
+
+/// Points gagnés par un spectateur. Les classements (tournoi, saison, général)
+/// sont la somme des entrées actives. Une correction ne modifie jamais une entrée :
+/// elle la marque remplacée (supersededAt) et en crée une nouvelle — c'est l'historique.
+model PointsEntry {
+  id             String       @id @default(uuid()) @db.Uuid
+  userId         String       @map("user_id") @db.Uuid
+  tournamentId   String       @map("tournament_id") @db.Uuid
+  reason         PointsReason
+  points         Int
+  predictionId   String?      @map("prediction_id") @db.Uuid
+  pickemAnswerId String?      @map("pickem_answer_id") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  supersededAt   DateTime?    @map("superseded_at") @db.Timestamptz(3)
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tournament   Tournament    @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  prediction   Prediction?   @relation(fields: [predictionId], references: [id], onDelete: SetNull)
+  pickemAnswer PickemAnswer? @relation(fields: [pickemAnswerId], references: [id], onDelete: SetNull)
+
+  @@index([tournamentId, userId])
+  @@index([userId])
+  @@map("points_entries")
+}
+
+/// Journal des actions sensibles, en ajout seul (ADR-0009).
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @map("actor_id") @db.Uuid
+  action     String /// ex. "match.score_corrected", "pickem.resolved"
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
