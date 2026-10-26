@@ -1,6 +1,6 @@
 # Journal des décisions d'architecture (ADR)
 
-Ce dossier rassemble les décisions d'architecture du projet EPIck'em. Chaque ADR décrit un choix structurant : son contexte, les options étudiées, la décision retenue et ses conséquences.
+Ce dossier rassemble les décisions d'architecture du projet Epickem. Chaque ADR décrit un choix structurant : son contexte, les options étudiées, la décision retenue et ses conséquences.
 
 ## Règles
 

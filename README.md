@@ -1,4 +1,9 @@
-# epickem
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/identite/logo/logo-horizontal.svg">
+    <img alt="Epickem" src="docs/identite/logo/logo-horizontal-sombre.svg" height="56">
+  </picture>
+</h1>
 
 [![CI](https://github.com/KCeldoublepied/epickem/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/KCeldoublepied/epickem/actions/workflows/ci.yml)
 
@@ -54,3 +59,4 @@ pnpm simulate     # lance le simulateur
 ```
 
 Les décisions d'architecture sont documentées dans [`docs/adr/`](docs/adr/README.md).
+L'identité visuelle (logo, couleurs, typographie) est décrite dans la [charte graphique](docs/identite/charte-graphique.md).

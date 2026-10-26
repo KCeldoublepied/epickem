@@ -1,0 +1,58 @@
+/*
+ * Styles de base. Les couleurs viennent de @epickem/shared (variables --epk-*, injectées
+ * par layout.tsx) : ne jamais écrire une couleur en dur ici, utiliser une variable.
+ * Charte : docs/identite/charte-graphique.md
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--epk-background);
+  color: var(--epk-text);
+  font-family: var(--epk-font-body), system-ui, sans-serif;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+h1,
+h2 {
+  font-family: var(--epk-font-display), Georgia, serif;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+a {
+  color: var(--epk-link);
+  text-underline-offset: 0.2em;
+}
+
+/* Scores, classements, chronos : chiffres de même largeur pour que rien ne bouge. */
+.tabular,
+table {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Focus clavier toujours visible (WCAG 2.4.7 et 2.4.11). */
+:focus-visible {
+  outline: 3px solid var(--epk-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

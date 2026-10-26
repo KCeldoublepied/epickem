@@ -5,8 +5,17 @@
  * Voir docs/adr/0001-monorepo-typescript-turborepo-pnpm.md.
  */
 
-/** Nom provisoire du produit, en attendant l'identité visuelle (#10). */
-export const APP_NAME = "EPIck'em";
+/**
+ * Nom du produit, tel qu'il s'écrit dans un texte. Le logo l'affiche en capitales (EPICKEM) ;
+ * dans le texte, on garde « Epickem » pour que les lecteurs d'écran le lisent comme un mot.
+ */
+export const APP_NAME = 'Epickem';
+
+/** Accroche, à utiliser sous le logo ou dans les métadonnées. */
+export const APP_TAGLINE = 'Pronostics. Tournois. Communauté.';
+
+export * from './brand';
+export * from './theme';
 
 /** Réponse de la route de santé de l'API (`GET /health`). */
 export interface HealthStatus {
