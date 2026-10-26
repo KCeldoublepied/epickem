@@ -54,9 +54,17 @@ pnpm dev          # web (http://localhost:3000) et API (http://localhost:4000)
 pnpm dev:mobile   # application mobile (Expo)
 pnpm build        # compile tout le monorepo
 pnpm typecheck    # vérifie les types
+pnpm test         # lance tous les tests
 pnpm lint         # vérifie le code (ESLint)
 pnpm format       # met en forme le code (Prettier)
 pnpm simulate     # lance le simulateur
+```
+
+Base de données (PostgreSQL lancé avec `docker compose up -d postgres redis`) :
+
+```bash
+pnpm --filter @epickem/api db:migrate   # applique les migrations
+pnpm --filter @epickem/api db:seed      # ajoute les données de départ (jeux et statistiques)
 ```
 
 Les décisions d'architecture sont documentées dans [`docs/adr/`](docs/adr/README.md).

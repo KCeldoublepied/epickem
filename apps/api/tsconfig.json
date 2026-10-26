@@ -4,12 +4,11 @@
     "module": "CommonJS",
     "moduleResolution": "Node10",
     "outDir": "dist",
-    "rootDir": "src",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "isolatedModules": false,
     "declaration": false,
     "types": ["node"]
   },
-  "include": ["src"]
+  "include": ["src", "test", "prisma/seed.ts"]
 }
