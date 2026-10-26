@@ -1,6 +1,8 @@
-import { DynamicModule, Module, StandardSchemaValidationPipe } from '@nestjs/common';
-import { APP_PIPE } from '@nestjs/core';
+import { DynamicModule, Module } from '@nestjs/common';
+import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 import { z } from 'zod';
+import { AllExceptionsFilter } from './common/all-exceptions.filter';
+import { createValidationPipe } from './common/validation.pipe';
 import { ConfigModule } from './config/config.module';
 import { Env } from './config/env';
 import { HealthController } from './health/health.controller';
@@ -12,9 +14,8 @@ z.config(z.locales.fr());
   imports: [PrismaModule],
   controllers: [HealthController],
   providers: [
-    // Valide chaque paramètre de route qui déclare un schéma Zod, par exemple
-    // `@Body({ schema: createTournamentSchema })`, et renvoie une erreur 400 sinon.
-    { provide: APP_PIPE, useClass: StandardSchemaValidationPipe },
+    { provide: APP_PIPE, useValue: createValidationPipe() },
+    { provide: APP_FILTER, useClass: AllExceptionsFilter },
   ],
 })
 export class AppModule {
