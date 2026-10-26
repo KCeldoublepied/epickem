@@ -16,7 +16,15 @@ Sur un runner Ubuntu, avec un service PostgreSQL 16 :
 4. `pnpm lint` (ESLint) et `pnpm format:check` (Prettier) ;
 5. `pnpm typecheck`, `pnpm test` et `pnpm build` sur tout le monorepo, via Turborepo.
 
-`test` ne fait encore rien : il prendra automatiquement en compte les premiers tests dès qu'ils seront ajoutés aux packages.
+`test` lance les tests de chaque package qui en a : `packages/shared` (`node --test`) et `apps/api` (Vitest, ADR-0012).
+
+Côté API, les tests unitaires sont à côté du code (`src/**/*.spec.ts`) et les tests de l'API complète,
+avec Supertest, dans `apps/api/test/*.e2e-spec.ts`. Pour ne lancer que certains tests (motif sur le nom de fichier) :
+
+```bash
+pnpm --filter @epickem/api test env       # sans « -- » : pnpm le transmettrait tel quel à Vitest
+pnpm --filter @epickem/api test:watch     # relance les tests à chaque modification
+```
 
 ### « Images Docker »
 

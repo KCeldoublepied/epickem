@@ -25,5 +25,24 @@ export interface HealthStatus {
   time: string;
 }
 
+/** Erreur renvoyée par l'API. Toutes les erreurs ont ce format, quelle que soit leur cause. */
+export interface ApiError {
+  /** Code HTTP : 400, 404, 500… */
+  statusCode: number;
+  /** Nom du code HTTP, stable, à utiliser dans le code : "BAD_REQUEST", "NOT_FOUND"… */
+  error: string;
+  /** Message lisible par une personne. */
+  message: string;
+  /** Champs invalides, pour une erreur de validation. */
+  issues?: ApiErrorIssue[];
+}
+
+/** Champ invalide d'une requête. */
+export interface ApiErrorIssue {
+  /** Chemin du champ, par exemple "name" ou "players.0.email" ; vide pour la donnée entière. */
+  path: string;
+  message: string;
+}
+
 /** Profils de la plateforme (sujet, bloc 02-B). */
 export type Role = 'admin' | 'player' | 'spectator';
