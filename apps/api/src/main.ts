@@ -5,6 +5,7 @@ import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { validateEnv } from './config/env';
+import { DOCS_PATH, setupSwagger } from './swagger';
 
 // En local, charge le .env à la racine du monorepo. Dans Docker, il n'existe pas :
 // les variables viennent de docker-compose.yml, et dotenv n'écrase jamais une variable déjà définie.
@@ -16,9 +17,11 @@ async function bootstrap(): Promise<void> {
 
   const app = await NestFactory.create(AppModule.forRoot(env));
   app.enableCors({ origin: env.WEB_ORIGIN });
+  setupSwagger(app);
 
   await app.listen(env.PORT);
   Logger.log(`API démarrée sur http://localhost:${env.PORT}`, 'Bootstrap');
+  Logger.log(`Documentation sur http://localhost:${env.PORT}/${DOCS_PATH}`, 'Bootstrap');
 }
 
 void bootstrap();
