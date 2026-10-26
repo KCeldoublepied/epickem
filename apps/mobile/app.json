@@ -1,13 +1,21 @@
 {
   "expo": {
-    "name": "EPIck'em",
+    "name": "Epickem",
     "slug": "epickem",
     "version": "0.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "platforms": ["android"],
+    "icon": "./assets/icon.png",
+    "backgroundColor": "#0A0F1A",
+    "primaryColor": "#0B6BFF",
     "android": {
-      "package": "eu.epickem.app"
+      "package": "eu.epickem.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/adaptive-icon-monochrome.png",
+        "backgroundColor": "#0A0F1A"
+      }
     }
   }
 }

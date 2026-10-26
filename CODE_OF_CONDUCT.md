@@ -2,7 +2,7 @@
 
 ## Notre engagement
 
-Nous voulons que la participation à EPIck'em soit une expérience respectueuse et sans harcèlement pour toutes et tous, quels que soient l'âge, l'apparence, le handicap, l'origine, l'identité ou l'expression de genre, l'orientation sexuelle, la religion, le niveau d'expérience ou la situation de chacun.
+Nous voulons que la participation à Epickem soit une expérience respectueuse et sans harcèlement pour toutes et tous, quels que soient l'âge, l'apparence, le handicap, l'origine, l'identité ou l'expression de genre, l'orientation sexuelle, la religion, le niveau d'expérience ou la situation de chacun.
 
 Ce code s'applique au dépôt (issues, pull requests, relectures, discussions) et à tous les échanges liés au projet.
 

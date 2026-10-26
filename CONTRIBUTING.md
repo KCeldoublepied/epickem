@@ -1,4 +1,4 @@
-# Contribuer à EPIck'em
+# Contribuer à Epickem
 
 Ce guide décrit comment le groupe travaille sur le dépôt : préparation de l'environnement, branches, commits, pull requests et versions. Toute contribution suit ces règles, y compris celles de l'équipe.
 
