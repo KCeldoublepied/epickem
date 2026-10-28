@@ -17,6 +17,8 @@ export function setupSwagger(app: INestApplication): void {
     .setTitle(`API ${APP_NAME}`)
     .setDescription('Tournois, résultats en direct et pronostics.')
     .setVersion('0.1')
+    .addCookieAuth('epickem_session')
+    .addBearerAuth()
     .build();
   SwaggerModule.setup(DOCS_PATH, app, () => SwaggerModule.createDocument(app, config));
 }

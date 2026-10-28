@@ -21,22 +21,21 @@ datasource db {
 // Comptes
 // ---------------------------------------------------------------------------
 
-enum Role {
-  ADMIN
-  PLAYER
-  SPECTATOR
-}
-
-/// Compte de la plateforme (administrateur, joueur ou spectateur).
+/// Compte de la plateforme. Il n'y a pas de rôle global : tout compte peut créer un tournoi.
+/// Les rôles (administrateur, joueur, spectateur) dépendent du tournoi : son organisateur
+/// en est l'administrateur, ses participants les joueurs, les autres comptes les spectateurs.
 model User {
   id           String   @id @default(uuid()) @db.Uuid
   email        String   @unique
+  /// Pseudo unique, stocké en minuscules : identifiant de connexion et adresse du profil.
+  username     String   @unique
+  /// Nom affiché, libre (majuscules, espaces…).
   displayName  String   @map("display_name")
   passwordHash String   @map("password_hash")
-  role         Role     @default(SPECTATOR)
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
+  sessions             Session[]
   organizedTournaments Tournament[]   @relation("TournamentOrganizer")
   captainOf            Team[]         @relation("TeamCaptain")
   teamMemberships      TeamMember[]
@@ -48,6 +47,24 @@ model User {
   auditLogs            AuditLog[]
 
   @@map("users")
+}
+
+/// Session de connexion. Le jeton est remis au client (cookie sur le web, en-tête
+/// Authorization sur mobile) ; seule son empreinte SHA-256 est stockée, pour qu'une fuite
+/// de la base ne permette pas d'usurper une session.
+model Session {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  tokenHash  String   @unique @map("token_hash")
+  userAgent  String?  @map("user_agent")
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz(3)
+  lastUsedAt DateTime @default(now()) @map("last_used_at") @db.Timestamptz(3)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
 }
 
 // ---------------------------------------------------------------------------

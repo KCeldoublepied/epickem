@@ -12,6 +12,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import type { ApiError } from '@epickem/shared';
 import { AppModule } from '../src/app.module';
+import { Public } from '../src/auth/auth.decorators';
 import { validateEnv } from '../src/config/env';
 import { setupSwagger } from '../src/swagger';
 
@@ -21,6 +22,7 @@ const createSchema = z.object({
 });
 
 /** Routes propres aux tests, pour vérifier la validation et le format des erreurs. */
+@Public()
 @Controller('test')
 class TestController {
   @Post('validation')

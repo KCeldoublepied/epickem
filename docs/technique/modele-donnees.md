@@ -37,6 +37,7 @@ erDiagram
   Season |o--o{ Tournament : ""
   ExternalSource |o--o| Tournament : "importé depuis"
   User |o--o{ Tournament : "organise"
+  User ||--o{ Session : "se connecte par"
 
   Tournament ||--o{ Stage : "se compose de"
   Tournament ||--o{ Participant : "engage"
@@ -119,17 +120,35 @@ Pensez à mettre à jour ce document dans la même PR que la migration.
 
 ### User — table `users`
 
-Compte de la plateforme (administrateur, joueur ou spectateur).
+Compte de la plateforme. Il n'y a pas de rôle global : tout compte peut créer un tournoi. Les rôles dépendent du
+tournoi : son organisateur en est l'administrateur, ses participants les joueurs, les autres comptes les spectateurs.
 
-| Champ          | Type        | Contraintes                   | Description                    |
-| -------------- | ----------- | ----------------------------- | ------------------------------ |
-| `id`           | `String`    | clé primaire, défaut `uuid()` | Identifiant.                   |
-| `email`        | `String`    | unique                        |                                |
-| `displayName`  | `String`    |                               |                                |
-| `passwordHash` | `String`    |                               |                                |
-| `role`         | enum `Role` | défaut `SPECTATOR`            |                                |
-| `createdAt`    | `DateTime`  | défaut `now()`                | Date de création.              |
-| `updatedAt`    | `DateTime`  | mis à jour automatiquement    | Date de dernière modification. |
+| Champ          | Type       | Contraintes                   | Description                                           |
+| -------------- | ---------- | ----------------------------- | ----------------------------------------------------- |
+| `id`           | `String`   | clé primaire, défaut `uuid()` | Identifiant.                                          |
+| `email`        | `String`   | unique                        | En minuscules.                                        |
+| `username`     | `String`   | unique                        | Pseudo, en minuscules : connexion, adresse du profil. |
+| `displayName`  | `String`   |                               | Nom affiché, libre.                                   |
+| `passwordHash` | `String`   |                               | Empreinte scrypt, paramètres inclus.                  |
+| `createdAt`    | `DateTime` | défaut `now()`                | Date de création.                                     |
+| `updatedAt`    | `DateTime` | mis à jour automatiquement    | Date de dernière modification.                        |
+
+### Session — table `sessions`
+
+Session de connexion. Le jeton est remis au client (cookie httpOnly sur le web, en-tête `Authorization` sur mobile) ;
+seule son empreinte SHA-256 est stockée.
+
+| Champ        | Type       | Contraintes                      | Description                                     |
+| ------------ | ---------- | -------------------------------- | ----------------------------------------------- |
+| `id`         | `String`   | clé primaire, défaut `uuid()`    | Identifiant.                                    |
+| `userId`     | `String`   | → `User`, suppression en cascade |                                                 |
+| `tokenHash`  | `String`   | unique                           | Empreinte SHA-256 du jeton.                     |
+| `userAgent`  | `String?`  |                                  | Appareil, pour lister ses sessions.             |
+| `expiresAt`  | `DateTime` |                                  | Prolongée à l'usage (30 jours sans activité).   |
+| `lastUsedAt` | `DateTime` | défaut `now()`                   | Dernière utilisation (mise à jour 1 fois/jour). |
+| `createdAt`  | `DateTime` | défaut `now()`                   | Date de création.                               |
+
+Index sur `userId`.
 
 ### Game — table `games`
 
@@ -452,7 +471,6 @@ Journal des actions sensibles, en ajout seul (ADR-0009).
 
 | Enum                 | Valeurs                                                                            |
 | -------------------- | ---------------------------------------------------------------------------------- |
-| `Role`               | `ADMIN`, `PLAYER`, `SPECTATOR`                                                     |
 | `StatType`           | `NUMBER`, `BOOLEAN`, `CHOICE`, `TEXT`                                              |
 | `StatScope`          | `MATCH_GAME`, `PARTICIPANT`                                                        |
 | `TournamentStatus`   | `DRAFT`, `REGISTRATION`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`                   |
