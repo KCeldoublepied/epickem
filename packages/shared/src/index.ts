@@ -14,6 +14,7 @@ export const APP_NAME = 'Epickem';
 /** Accroche, à utiliser sous le logo ou dans les métadonnées. */
 export const APP_TAGLINE = 'Pronostics. Tournois. Communauté.';
 
+export * from './auth';
 export * from './brand';
 export * from './theme';
 
@@ -43,6 +44,3 @@ export interface ApiErrorIssue {
   path: string;
   message: string;
 }
-
-/** Profils de la plateforme (sujet, bloc 02-B). */
-export type Role = 'admin' | 'player' | 'spectator';

@@ -9,7 +9,13 @@ describe('validateEnv', () => {
       PORT: 4000,
       DATABASE_URL,
       WEB_ORIGIN: 'http://localhost:3000',
+      COOKIE_SECURE: true,
+      AUTH_RATE_LIMIT: 10,
     });
+  });
+
+  it('lit COOKIE_SECURE comme un booléen', () => {
+    expect(validateEnv({ DATABASE_URL, COOKIE_SECURE: 'false' }).COOKIE_SECURE).toBe(false);
   });
 
   it('convertit le port en nombre', () => {

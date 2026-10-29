@@ -10,6 +10,13 @@ export const envSchema = z.object({
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
   /** Origine autorisée par CORS (le site web). */
   WEB_ORIGIN: z.url().default('http://localhost:3000'),
+  /**
+   * Cookie de session envoyé uniquement en HTTPS. Les navigateurs l'acceptent aussi sur
+   * http://localhost ; ne le désactiver que pour un autre hôte en HTTP.
+   */
+  COOKIE_SECURE: z.stringbool().default(true),
+  /** Tentatives d'inscription ou de connexion autorisées par minute et par adresse IP. */
+  AUTH_RATE_LIMIT: z.coerce.number().int().positive().default(10),
 });
 
 export type Env = z.infer<typeof envSchema>;
