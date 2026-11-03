@@ -1,0 +1,297 @@
+/* Création d'un tournoi. Maquette : « Admin : créer un tournoi » (M1). */
+
+.page {
+  min-height: 100vh;
+}
+
+.header {
+  padding: 16px 40px;
+  border-bottom: 1px solid var(--epk-divider);
+  background: var(--epk-surface);
+}
+
+.home {
+  display: inline-flex;
+}
+
+.main {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 40px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.breadcrumb {
+  font-size: 0.875rem;
+  color: var(--epk-text-muted);
+}
+
+.title {
+  margin: 0;
+  font-size: 2.125rem;
+}
+
+.alert {
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--epk-error);
+  background: var(--epk-surface);
+}
+
+.alert p {
+  margin: 0;
+}
+
+/* Formulaire à gauche, aperçu à droite ; l'aperçu passe dessous sur petit écran. */
+.layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.form {
+  flex: 999 1 520px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.section {
+  margin: 0;
+  min-width: 0;
+  border: 1px solid var(--epk-divider);
+  border-radius: 12px;
+  padding: 20px 24px 24px;
+  background: var(--epk-surface);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.sectionThree {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.section > legend {
+  padding: 0 6px;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.label {
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.optional {
+  font-weight: 400;
+  color: var(--epk-text-muted);
+}
+
+.input,
+.textarea {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--epk-border);
+  background: var(--epk-background);
+  color: var(--epk-text);
+  font: inherit;
+}
+
+.input {
+  height: 44px;
+  padding: 0 12px;
+}
+
+.textarea {
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.input[aria-invalid='true'],
+.textarea[aria-invalid='true'] {
+  border: 2px solid var(--epk-error);
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--epk-text-muted);
+}
+
+.fieldError {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--epk-error);
+}
+
+.radioGroup {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.radioGroup > legend {
+  padding: 0;
+  margin-bottom: 6px;
+}
+
+.radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--epk-divider);
+  cursor: pointer;
+}
+
+.radio:has(input:checked) {
+  border: 2px solid var(--epk-primary);
+  background: var(--epk-surface-raised);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.actions .hint {
+  flex: 1 1 260px;
+}
+
+.submit,
+.secondary {
+  height: 48px;
+  padding: 0 22px;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.submit {
+  border: 0;
+  background: var(--epk-primary);
+  color: var(--epk-on-primary);
+}
+
+.submit:hover {
+  background: var(--epk-primary-hover);
+}
+
+.submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.secondary {
+  border: 1px solid var(--epk-border);
+  background: transparent;
+  color: var(--epk-text);
+}
+
+.preview,
+.created {
+  background: var(--epk-surface);
+  border: 1px solid var(--epk-divider);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.preview {
+  flex: 1 1 280px;
+  position: sticky;
+  top: 24px;
+}
+
+.preview h2,
+.created h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.created p {
+  margin: 0;
+}
+
+.badge {
+  align-self: flex-start;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--epk-badge-accent);
+  color: var(--epk-on-badge);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.previewName {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.previewList {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  font-size: 0.875rem;
+}
+
+.previewList dt {
+  color: var(--epk-text-muted);
+}
+
+.previewList dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 720px) {
+  .header {
+    padding: 12px 16px;
+  }
+
+  .main {
+    padding: 24px 16px 48px;
+  }
+
+  .section,
+  .sectionThree {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px;
+  }
+
+  .preview {
+    position: static;
+  }
+}
