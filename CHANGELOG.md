@@ -16,4 +16,5 @@ Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) 
 - Modèle de données v1 avec Prisma 7 et PostgreSQL, documenté dans `docs/technique/modele-donnees.md` (#9).
 - Intégration continue GitHub Actions : migrations, lint, types, tests, build et images Docker à chaque PR (#6).
 - ESLint (dont accessibilité), Prettier, hooks Git (lint-staged, commitlint) et vérification du formatage en CI (#3).
+- Création rapide d'un tournoi (nom, début, fin) puis dashboard de l'organisateur : jeu parmi League of Legends, Counter-Strike 2, Super Smash Bros. Ultimate, Rocket League et Fortnite, réglages propres à chaque jeu, participants et structure en plusieurs phases, chacune avec son format (#14).
 - Identité visuelle : nom Epickem, logo vectoriel et icônes (web, Android), charte graphique dans `docs/identite/`, couleurs et polices partagées dans `@epickem/shared` avec test des contrastes WCAG (#10).

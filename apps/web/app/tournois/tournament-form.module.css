@@ -1,4 +1,4 @@
-/* Création d'un tournoi. Maquette : « Admin : créer un tournoi » (M1). */
+/* Formulaires d'un tournoi : création rapide et sections du dashboard. */
 
 .page {
   min-height: 100vh;
@@ -34,17 +34,8 @@
   margin: 0;
 }
 
-/* Formulaire à gauche, aperçu à droite ; l'aperçu passe dessous sur petit écran. */
-.layout {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  align-items: flex-start;
-}
-
 .form {
-  flex: 999 1 520px;
-  min-width: 0;
+  max-width: 720px;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -157,6 +148,20 @@
   cursor: pointer;
 }
 
+.checks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 6px 16px;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
 .radio:has(input:checked) {
   border: 2px solid var(--epk-primary);
   background: var(--epk-surface-raised);
@@ -203,24 +208,6 @@
   border: 1px solid var(--epk-border);
   background: transparent;
   color: var(--epk-text);
-}
-
-.preview {
-  flex: 1 1 280px;
-  position: sticky;
-  top: 24px;
-  background: var(--epk-surface);
-  border: 1px solid var(--epk-divider);
-  border-radius: 12px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.preview h2 {
-  margin: 0;
-  font-size: 1.125rem;
 }
 
 .badge {
@@ -270,30 +257,6 @@
   gap: 20px;
 }
 
-.previewName {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-  overflow-wrap: anywhere;
-}
-
-.previewList {
-  margin: 0;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 6px 12px;
-  font-size: 0.875rem;
-}
-
-.previewList dt {
-  color: var(--epk-text-muted);
-}
-
-.previewList dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
 @media (max-width: 720px) {
   .main {
     padding: 24px 16px 48px;
@@ -303,9 +266,5 @@
   .sectionThree {
     grid-template-columns: minmax(0, 1fr);
     padding: 16px;
-  }
-
-  .preview {
-    position: static;
   }
 }

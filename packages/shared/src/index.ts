@@ -16,6 +16,8 @@ export const APP_TAGLINE = 'Pronostics. Tournois. Communauté.';
 
 export * from './auth';
 export * from './brand';
+export * from './game-catalog';
+export * from './stages';
 export * from './theme';
 export * from './tournament';
 

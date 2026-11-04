@@ -3,6 +3,9 @@ import type { ApiError } from '@epickem/shared';
 /** Adresse de l'API vue par le navigateur. */
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
+/** Message à afficher quand `apiFetch` rejette sans ApiRequestError (panne réseau). */
+export const NETWORK_ERROR = 'Impossible de joindre le serveur. Réessayez dans un instant.';
+
 /** Réponse en erreur de l'API ; `body` suit le format ApiError quand l'API a pu répondre. */
 export class ApiRequestError extends Error {
   constructor(

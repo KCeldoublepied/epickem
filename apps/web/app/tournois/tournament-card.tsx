@@ -64,7 +64,7 @@ export function TournamentCard({ tournament, showOrganizer, actions }: Tournamen
       </h2>
       <dl className={styles.details}>
         <dt>Jeu</dt>
-        <dd>{tournament.game.name}</dd>
+        <dd>{tournament.game?.name ?? 'À définir'}</dd>
         <dt>Début</dt>
         <dd className="tabular">
           {tournament.startsAt ? DATE_FORMAT.format(new Date(tournament.startsAt)) : 'À définir'}

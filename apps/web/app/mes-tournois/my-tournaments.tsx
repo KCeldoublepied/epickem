@@ -33,12 +33,9 @@ export function MyTournaments() {
         <TournamentCard
           tournament={tournament}
           actions={
-            // Un tournoi commencé, terminé ou annulé ne se modifie plus.
-            (tournament.status === 'DRAFT' || tournament.status === 'REGISTRATION') && (
-              <Link href={`/mes-tournois/${tournament.id}/modifier`} className={styles.primary}>
-                Modifier<span className={styles.srOnly}> {tournament.name}</span>
-              </Link>
-            )
+            <Link href={`/mes-tournois/${tournament.id}`} className={styles.primary}>
+              Gérer<span className={styles.srOnly}> {tournament.name}</span>
+            </Link>
           }
         />
       )}

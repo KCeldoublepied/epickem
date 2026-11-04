@@ -33,7 +33,7 @@ S'ajoute `AuditLog`, le journal des actions sensibles exigé par le bloc 03-B.
 ```mermaid
 erDiagram
   Game ||--o{ GameStat : "suit"
-  Game ||--o{ Tournament : ""
+  Game |o--o{ Tournament : ""
   Season |o--o{ Tournament : ""
   ExternalSource |o--o| Tournament : "importé depuis"
   User |o--o{ Tournament : "organise"
@@ -80,8 +80,14 @@ marquée comme exempt (`isBye`).
 cohérence des arbres relèvent du moteur de tournois ([ADR-0008](../adr/0008-moteur-de-tournois-strategy.md)).
 
 **Les données qui varient sont en JSONB**, et validées par des schémas Zod côté API :
-`Stage.settings` (réglages d'étape), `Tournament.customFields` et `Registration.customFieldValues` (champs d'inscription),
+`Stage.settings` (réglages d'étape), `Tournament.gameSettings` (réglages du jeu), `Tournament.customFields` et `Registration.customFieldValues` (champs d'inscription),
 `Tournament.scoring` (barème), `MatchGame.stats` (statistiques de manche), `PickemQuestion.config`, `choices` et `resolution`.
+
+**Les réglages d'un jeu sont décrits par un catalogue.** `GAME_CATALOG` (`packages/shared/src/game-catalog.ts`) liste, pour
+chaque `Game.slug`, les champs de `Tournament.gameSettings` (région, cartes, type de sélection…), les formats d'étape
+jouables et les compositions d'équipe. Le dashboard en déduit son formulaire et l'API sa validation. Ajouter un jeu revient à
+ajouter une entrée au catalogue, une migration qui l'insère dans `games` et ses statistiques au seed. Les réglages, eux,
+évoluent sans migration.
 
 **Les classements sont calculés, pas stockés.** Chaque point gagné est une ligne de `PointsEntry`. Le classement d'un tournoi,
 d'une saison ou le classement général est la somme des entrées actives (`supersededAt` vide). Lors d'un recalcul en cascade,
@@ -194,35 +200,36 @@ Saison regroupant des tournois, pour les classements par saison.
 
 Tournoi interne ou importé.
 
-| Champ                  | Type                    | Contraintes                            | Description                                                                            |
-| ---------------------- | ----------------------- | -------------------------------------- | -------------------------------------------------------------------------------------- |
-| `id`                   | `String`                | clé primaire, défaut `uuid()`          | Identifiant.                                                                           |
-| `gameId`               | `String`                | → `Game`                               |                                                                                        |
-| `organizerId`          | `String`                | → `User`, facultatif                   |                                                                                        |
-| `seasonId`             | `String`                | → `Season`, facultatif                 |                                                                                        |
-| `sourceId`             | `String`                | → `ExternalSource`, unique, facultatif | Renseigné si le tournoi est importé : il est alors en lecture seule.                   |
-| `name`                 | `String`                |                                        |                                                                                        |
-| `slug`                 | `String`                | unique                                 |                                                                                        |
-| `description`          | `String`                | facultatif                             |                                                                                        |
-| `rules`                | `String`                | facultatif                             |                                                                                        |
-| `status`               | enum `TournamentStatus` | défaut `DRAFT`                         |                                                                                        |
-| `visibility`           | enum `Visibility`       | défaut `PUBLIC`                        |                                                                                        |
-| `startsAt`             | `DateTime`              | facultatif                             |                                                                                        |
-| `endsAt`               | `DateTime`              | facultatif                             |                                                                                        |
-| `locationType`         | enum `LocationType`     | défaut `ONLINE`                        |                                                                                        |
-| `location`             | `String`                | facultatif                             |                                                                                        |
-| `participantType`      | enum `ParticipantType`  | défaut `SOLO`                          |                                                                                        |
-| `teamSizeMin`          | `Int`                   | facultatif                             |                                                                                        |
-| `teamSizeMax`          | `Int`                   | facultatif                             |                                                                                        |
-| `maxParticipants`      | `Int`                   | facultatif                             |                                                                                        |
-| `registrationMode`     | enum `RegistrationMode` | défaut `OPEN`                          |                                                                                        |
-| `registrationOpensAt`  | `DateTime`              | facultatif                             |                                                                                        |
-| `registrationClosesAt` | `DateTime`              | facultatif                             |                                                                                        |
-| `checkInOpensAt`       | `DateTime`              | facultatif                             |                                                                                        |
-| `customFields`         | `Json`                  | défaut `"[]"`                          | Définition des champs d'inscription personnalisés (libellé, type, obligatoire…).       |
-| `scoring`              | `Json`                  | défaut `"{}"`                          | Barème des pronostics par défaut (points, bonus score exact, multiplicateur par tour). |
-| `createdAt`            | `DateTime`              | défaut `now()`                         | Date de création.                                                                      |
-| `updatedAt`            | `DateTime`              | mis à jour automatiquement             | Date de dernière modification.                                                         |
+| Champ                  | Type                    | Contraintes                            | Description                                                                             |
+| ---------------------- | ----------------------- | -------------------------------------- | --------------------------------------------------------------------------------------- |
+| `id`                   | `String`                | clé primaire, défaut `uuid()`          | Identifiant.                                                                            |
+| `gameId`               | `String`                | → `Game`, facultatif                   | Vide tant que le jeu n'est pas choisi : obligatoire pour publier.                       |
+| `organizerId`          | `String`                | → `User`, facultatif                   |                                                                                         |
+| `seasonId`             | `String`                | → `Season`, facultatif                 |                                                                                         |
+| `sourceId`             | `String`                | → `ExternalSource`, unique, facultatif | Renseigné si le tournoi est importé : il est alors en lecture seule.                    |
+| `name`                 | `String`                |                                        |                                                                                         |
+| `slug`                 | `String`                | unique                                 |                                                                                         |
+| `description`          | `String`                | facultatif                             |                                                                                         |
+| `rules`                | `String`                | facultatif                             |                                                                                         |
+| `status`               | enum `TournamentStatus` | défaut `DRAFT`                         |                                                                                         |
+| `visibility`           | enum `Visibility`       | défaut `PUBLIC`                        |                                                                                         |
+| `startsAt`             | `DateTime`              | facultatif                             |                                                                                         |
+| `endsAt`               | `DateTime`              | facultatif                             |                                                                                         |
+| `locationType`         | enum `LocationType`     | défaut `ONLINE`                        |                                                                                         |
+| `location`             | `String`                | facultatif                             |                                                                                         |
+| `participantType`      | enum `ParticipantType`  | défaut `SOLO`                          |                                                                                         |
+| `teamSizeMin`          | `Int`                   | facultatif                             |                                                                                         |
+| `teamSizeMax`          | `Int`                   | facultatif                             |                                                                                         |
+| `maxParticipants`      | `Int`                   | facultatif                             |                                                                                         |
+| `registrationMode`     | enum `RegistrationMode` | défaut `OPEN`                          |                                                                                         |
+| `registrationOpensAt`  | `DateTime`              | facultatif                             |                                                                                         |
+| `registrationClosesAt` | `DateTime`              | facultatif                             |                                                                                         |
+| `checkInOpensAt`       | `DateTime`              | facultatif                             |                                                                                         |
+| `customFields`         | `Json`                  | défaut `"[]"`                          | Définition des champs d'inscription personnalisés (libellé, type, obligatoire…).        |
+| `scoring`              | `Json`                  | défaut `"{}"`                          | Barème des pronostics par défaut (points, bonus score exact, multiplicateur par tour).  |
+| `gameSettings`         | `Json`                  | défaut `"{}"`                          | Réglages propres au jeu (région, cartes, type de sélection…), décrits par GAME_CATALOG. |
+| `createdAt`            | `DateTime`              | défaut `now()`                         | Date de création.                                                                       |
+| `updatedAt`            | `DateTime`              | mis à jour automatiquement             | Date de dernière modification.                                                          |
 
 ### ExternalSource — table `external_sources`
 
@@ -245,18 +252,18 @@ Unicité : `(connector, externalId)`.
 
 Étape d'un tournoi (poules, puis arbre…), avec son format.
 
-| Champ            | Type                  | Contraintes                   | Description                                                                                                                      |
-| ---------------- | --------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `id`             | `String`              | clé primaire, défaut `uuid()` | Identifiant.                                                                                                                     |
-| `tournamentId`   | `String`              | → `Tournament`                |                                                                                                                                  |
-| `order`          | `Int`                 |                               | position de l'étape dans le tournoi (1, 2…)                                                                                      |
-| `name`           | `String`              |                               |                                                                                                                                  |
-| `format`         | enum `StageFormat`    |                               |                                                                                                                                  |
-| `status`         | enum `StageStatus`    | défaut `PENDING`              |                                                                                                                                  |
-| `predictionMode` | enum `PredictionMode` | défaut `MATCH`                |                                                                                                                                  |
-| `settings`       | `Json`                | défaut `"{}"`                 | Réglages : BO par tour, départage, seeding, nombre de rondes suisses, points FFA, règles de qualification vers l'étape suivante… |
-| `startsAt`       | `DateTime`            | facultatif                    |                                                                                                                                  |
-| `bracketLockAt`  | `DateTime`            | facultatif                    | Verrouillage des pronostics « arbre complet » de l'étape.                                                                        |
+| Champ            | Type                  | Contraintes                   | Description                                                                                                                                  |
+| ---------------- | --------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`             | `String`              | clé primaire, défaut `uuid()` | Identifiant.                                                                                                                                 |
+| `tournamentId`   | `String`              | → `Tournament`                |                                                                                                                                              |
+| `order`          | `Int`                 |                               | position de l'étape dans le tournoi (1, 2…)                                                                                                  |
+| `name`           | `String`              |                               |                                                                                                                                              |
+| `format`         | enum `StageFormat`    |                               |                                                                                                                                              |
+| `status`         | enum `StageStatus`    | défaut `PENDING`              |                                                                                                                                              |
+| `predictionMode` | enum `PredictionMode` | défaut `MATCH`                |                                                                                                                                              |
+| `settings`       | `Json`                | défaut `"{}"`                 | Réglages selon le format (`stageInputSchema`) : BO, départage, seeding, rondes suisses, poules, points FFA, qualifiés pour l'étape suivante… |
+| `startsAt`       | `DateTime`            | facultatif                    |                                                                                                                                              |
+| `bracketLockAt`  | `DateTime`            | facultatif                    | Verrouillage des pronostics « arbre complet » de l'étape.                                                                                    |
 
 Unicité : `(tournamentId, order)`.
 

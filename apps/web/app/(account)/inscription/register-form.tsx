@@ -11,9 +11,9 @@ import {
   usernameSchema,
 } from '@epickem/shared';
 
-import { ApiRequestError, apiFetch } from '../../api-client';
+import { ApiRequestError, apiFetch, NETWORK_ERROR } from '../../api-client';
 import styles from '../compte.module.css';
-import { FormAlert, NETWORK_ERROR, PasswordField, TextField, TOO_MANY_ATTEMPTS } from '../fields';
+import { FormAlert, PasswordField, TextField, TOO_MANY_ATTEMPTS } from '../fields';
 
 type FieldName = 'username' | 'email' | 'password';
 type FieldErrors = Partial<Record<FieldName, string>>;

@@ -1,5 +1,14 @@
 import { z } from 'zod';
 
+import type { GameSettings } from './game-catalog';
+import {
+  dateTimeSchema,
+  MAX_STAGES,
+  type StageDetail,
+  stageInputSchema,
+  stageStructureIssues,
+} from './stages';
+
 // Valeurs des énumérations du modèle de données (apps/api/prisma/schema.prisma).
 export const TOURNAMENT_STATUSES = [
   'DRAFT',
@@ -23,15 +32,47 @@ export type ParticipantType = (typeof PARTICIPANT_TYPES)[number];
 export const REGISTRATION_MODES = ['OPEN', 'APPROVAL'] as const;
 export type RegistrationMode = (typeof REGISTRATION_MODES)[number];
 
-/** Date et heure ISO 8601 avec fuseau, par exemple "2026-12-01T18:00:00Z". */
-const dateTimeSchema = z.iso.datetime({ offset: true });
+const isBefore = (a?: string, b?: string) =>
+  a !== undefined && b !== undefined && Date.parse(a) < Date.parse(b);
+const isNotAfter = (a?: string, b?: string) =>
+  a !== undefined && b !== undefined && Date.parse(a) <= Date.parse(b);
 
-const optionalText = (max: number) => z.string().trim().min(1).max(max).optional();
+const NAME_ERROR = 'De 3 à 100 caractères.';
+const nameSchema = z.string(NAME_ERROR).trim().min(3, NAME_ERROR).max(100, NAME_ERROR);
 
+const optionalText = (max: number) => {
+  const message = `Au plus ${max.toLocaleString('fr-FR')} caractères.`;
+  return z.string().trim().min(1, message).max(max, message).optional();
+};
+
+const END_BEFORE_START = 'Doit être après le début du tournoi';
+
+/** Création rapide : le reste se règle ensuite dans le dashboard du tournoi. */
 export const createTournamentSchema = z
   .object({
-    gameId: z.uuid(),
-    name: z.string().trim().min(3).max(100),
+    name: nameSchema,
+    startsAt: z.iso.datetime({ offset: true, error: 'Indiquez la date et l’heure de début.' }),
+    endsAt: z.iso.datetime({ offset: true, error: 'Indiquez la date et l’heure de fin.' }),
+  })
+  .superRefine((input, ctx) => {
+    if (isNotAfter(input.endsAt, input.startsAt)) {
+      ctx.addIssue({ code: 'custom', path: ['endsAt'], message: END_BEFORE_START });
+    }
+  });
+export type CreateTournamentInput = z.infer<typeof createTournamentSchema>;
+
+const TEAM_SIZE_ERROR = 'Nombre entier de 1 à 100.';
+const teamSize = z.int(TEAM_SIZE_ERROR).min(1, TEAM_SIZE_ERROR).max(100, TEAM_SIZE_ERROR);
+const SEATS_ERROR = 'Nombre entier de 2 à 4 096.';
+
+/** Tous les réglages d'un tournoi, enregistrés d'un bloc depuis le dashboard. */
+export const tournamentSettingsSchema = z
+  .object({
+    /** Facultatif tant que le tournoi est un brouillon. */
+    gameId: z.uuid('Choisissez un jeu.').optional(),
+    /** Réglages du jeu, validés par l'API avec le catalogue (normalizeGameSettings). */
+    gameSettings: z.record(z.string(), z.unknown()).default({}),
+    name: nameSchema,
     description: optionalText(5000),
     rules: optionalText(10000),
     visibility: z.enum(VISIBILITIES).default('PUBLIC'),
@@ -42,21 +83,20 @@ export const createTournamentSchema = z
     location: optionalText(200),
     participantType: z.enum(PARTICIPANT_TYPES).default('SOLO'),
     /** Taille des équipes ; obligatoire pour un tournoi par équipes, interdite en solo. */
-    teamSizeMin: z.int().min(1).max(100).optional(),
-    teamSizeMax: z.int().min(1).max(100).optional(),
-    maxParticipants: z.int().min(2).max(4096).optional(),
+    teamSizeMin: teamSize.optional(),
+    teamSizeMax: teamSize.optional(),
+    /** Nombre d'inscrits en solo, nombre d'équipes sinon. */
+    maxParticipants: z.int(SEATS_ERROR).min(2, SEATS_ERROR).max(4096, SEATS_ERROR).optional(),
     registrationMode: z.enum(REGISTRATION_MODES).default('OPEN'),
     registrationOpensAt: dateTimeSchema.optional(),
     registrationClosesAt: dateTimeSchema.optional(),
     checkInOpensAt: dateTimeSchema.optional(),
+    /** Phases de la compétition, dans l'ordre ; chacune a son propre format. */
+    stages: z.array(stageInputSchema).max(MAX_STAGES, `Au plus ${MAX_STAGES} phases.`).default([]),
   })
   .superRefine((input, ctx) => {
     const issue = (path: string, message: string) =>
       ctx.addIssue({ code: 'custom', path: [path], message });
-    const before = (a?: string, b?: string) =>
-      a !== undefined && b !== undefined && Date.parse(a) < Date.parse(b);
-    const notAfter = (a?: string, b?: string) =>
-      a !== undefined && b !== undefined && Date.parse(a) <= Date.parse(b);
 
     if (input.locationType !== 'ONLINE' && !input.location) {
       issue('location', 'Le lieu est obligatoire pour un tournoi sur place ou hybride');
@@ -73,20 +113,39 @@ export const createTournamentSchema = z
       if (input.teamSizeMax !== undefined) issue('teamSizeMax', 'Réservé aux tournois par équipes');
     }
 
-    if (notAfter(input.endsAt, input.startsAt)) {
-      issue('endsAt', 'Doit être après le début du tournoi');
-    }
-    if (notAfter(input.registrationClosesAt, input.registrationOpensAt)) {
+    if (isNotAfter(input.endsAt, input.startsAt)) issue('endsAt', END_BEFORE_START);
+    if (isNotAfter(input.registrationClosesAt, input.registrationOpensAt)) {
       issue('registrationClosesAt', "Doit être après l'ouverture des inscriptions");
     }
-    if (before(input.startsAt, input.registrationClosesAt)) {
+    if (isBefore(input.startsAt, input.registrationClosesAt)) {
       issue('registrationClosesAt', 'Doit être avant le début du tournoi');
     }
-    if (before(input.startsAt, input.checkInOpensAt)) {
+    if (isBefore(input.startsAt, input.checkInOpensAt)) {
       issue('checkInOpensAt', 'Doit être avant le début du tournoi');
     }
+
+    for (const { path, message } of stageStructureIssues(input.stages, input)) {
+      ctx.addIssue({ code: 'custom', path, message });
+    }
   });
-export type CreateTournamentInput = z.infer<typeof createTournamentSchema>;
+export type TournamentSettingsInput = z.infer<typeof tournamentSettingsSchema>;
+/** Réglages tels qu'un formulaire les saisit : les valeurs par défaut peuvent manquer. */
+export type TournamentSettingsFormInput = z.input<typeof tournamentSettingsSchema>;
+
+/** Ce qui manque à un tournoi pour être publié ; vide s'il est prêt. */
+export function publicationIssues(tournament: {
+  gameId?: string | null;
+  startsAt?: string | null;
+  stages: readonly unknown[];
+}): { path: string; message: string }[] {
+  const issues: { path: string; message: string }[] = [];
+  if (!tournament.gameId) issues.push({ path: 'gameId', message: 'Choisir le jeu' });
+  if (!tournament.startsAt) issues.push({ path: 'startsAt', message: 'Fixer la date de début' });
+  if (tournament.stages.length === 0) {
+    issues.push({ path: 'stages', message: 'Ajouter au moins une phase' });
+  }
+  return issues;
+}
 
 /** Jeu tel que l'API le renvoie dans les listes (`GET /games`). */
 export interface GameSummary {
@@ -116,7 +175,12 @@ export interface TournamentDetail {
   registrationOpensAt: string | null;
   registrationClosesAt: string | null;
   checkInOpensAt: string | null;
-  game: GameSummary;
+  /** null tant que l'organisateur n'a pas choisi le jeu. */
+  game: GameSummary | null;
+  /** Réglages propres au jeu, décrits par GAME_CATALOG. */
+  gameSettings: GameSettings;
+  /** Phases de la compétition, dans l'ordre. */
+  stages: StageDetail[];
   organizer: { id: string; username: string; displayName: string } | null;
   createdAt: string;
   updatedAt: string;

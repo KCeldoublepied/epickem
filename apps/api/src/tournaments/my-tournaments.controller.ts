@@ -31,7 +31,7 @@ export class MyTournamentsController {
     return this.tournaments.listOrganizedBy(user.id, query);
   }
 
-  /** Tournoi complet, brouillon compris, pour le formulaire de modification. */
+  /** Tournoi complet, brouillon compris, pour son dashboard. */
   @Get(':id')
   get(
     @CurrentUser() user: AuthUser,

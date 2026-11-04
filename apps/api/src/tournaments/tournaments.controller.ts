@@ -18,6 +18,8 @@ import {
   listQuerySchema,
   type Page,
   type TournamentDetail,
+  type TournamentSettingsInput,
+  tournamentSettingsSchema,
   type TournamentSummary,
 } from '@epickem/shared';
 import type { AuthUser } from '../auth/auth-user';
@@ -37,6 +39,7 @@ export class TournamentsController {
     return this.tournaments.listPublic(query);
   }
 
+  /** Création rapide : nom, début et fin. Le reste se règle ensuite avec PUT /tournaments/:id. */
   @Post()
   create(
     @CurrentUser() user: AuthUser,
@@ -45,11 +48,12 @@ export class TournamentsController {
     return this.tournaments.create(user.id, body);
   }
 
+  /** Enregistre tous les réglages du tournoi d'un bloc, phases comprises. */
   @Put(':id')
   update(
     @CurrentUser() user: AuthUser,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body({ schema: createTournamentSchema }) body: CreateTournamentInput,
+    @Body({ schema: tournamentSettingsSchema }) body: TournamentSettingsInput,
   ): Promise<TournamentDetail> {
     return this.tournaments.update(user.id, id, body);
   }

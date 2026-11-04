@@ -2,12 +2,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { SiteHeader } from '../../site-header';
-import { TournamentForm } from '../tournament-form';
+import { CreateTournamentForm } from '../create-tournament-form';
 import styles from '../tournament-form.module.css';
 
 export const metadata: Metadata = { title: 'Créer un tournoi' };
 
-/** Création d'un tournoi. Maquette : « Admin : créer un tournoi » (M1, #13 et #14). */
+/** Création rapide d'un tournoi ; ses réglages se font ensuite dans son dashboard (#14). */
 export default function NewTournamentPage() {
   return (
     <div className={styles.page}>
@@ -18,7 +18,7 @@ export default function NewTournamentPage() {
           <span aria-current="page">Nouveau tournoi</span>
         </nav>
         <h1 className={styles.title}>Créer un tournoi</h1>
-        <TournamentForm />
+        <CreateTournamentForm />
       </main>
     </div>
   );
