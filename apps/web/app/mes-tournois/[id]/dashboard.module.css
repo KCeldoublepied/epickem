@@ -258,41 +258,91 @@
   opacity: 0.5;
 }
 
-/* Parcours de la compétition, de gauche à droite. */
-.flow {
+/* Schéma de la compétition : les phases de haut en bas, leurs étapes de gauche à droite. */
+.flow,
+.flowSteps {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px 28px;
 }
 
-.flowStep {
-  position: relative;
-  padding: 10px 14px;
+.flow {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.flowPhase {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.flowLink {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--epk-text-muted);
+}
+
+.flowCard {
+  padding: 14px 16px;
   border: 1px solid var(--epk-divider);
   border-radius: 10px;
   background: var(--epk-background);
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  font-size: 0.875rem;
+  gap: 12px;
   min-width: 0;
+}
+
+.flowTitle {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  align-items: baseline;
   overflow-wrap: anywhere;
 }
 
-.flowStep > span {
+.flowTitle > span {
+  font-size: 0.875rem;
   color: var(--epk-text-muted);
 }
 
-.flowStep:not(:last-child)::after {
-  content: '→';
-  position: absolute;
-  right: -21px;
-  top: 50%;
-  transform: translateY(-50%);
+.flowSteps {
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+
+.flowStep {
+  flex: 1 1 120px;
+  max-width: 200px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.8125rem;
+}
+
+.flowStep > span:not(.bars) {
   color: var(--epk-text-muted);
+}
+
+/* Une barre par match : les tours d'un arbre dessinent une pyramide. */
+.bars {
+  width: 64px;
+  height: 60px;
+  margin-bottom: 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--epk-primary);
 }
 
 @media (max-width: 860px) {

@@ -36,7 +36,8 @@ import {
   validate,
 } from './draft';
 import { GameSection, teamPatch } from './game-section';
-import { participantUnit, StructureFlow, StructureSection } from './structure-section';
+import { StructureFlow } from './structure-flow';
+import { participantUnit, StructureSection } from './structure-section';
 
 const DATE_FORMAT = new Intl.DateTimeFormat('fr-FR', {
   weekday: 'short',

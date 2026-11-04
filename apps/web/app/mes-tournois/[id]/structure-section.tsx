@@ -29,6 +29,7 @@ import {
 import formStyles from '../../tournois/tournament-form.module.css';
 import styles from './dashboard.module.css';
 import { type Draft, gameSlug, type SectionProps, type StageDraft } from './draft';
+import { StructureFlow } from './structure-flow';
 
 const BEST_OF_OPTIONS = BEST_OF_VALUES.map((value) => [String(value), `BO${value}`] as const);
 const SEEDING_OPTIONS = SEEDINGS.map((value) => [value, SEEDING_LABELS[value]] as const);
@@ -38,34 +39,6 @@ const newKey = () => `nouvelle-phase-${++lastKey}`;
 
 export const participantUnit = (draft: Draft) =>
   draft.participantType === 'TEAM' ? 'équipes' : 'joueurs';
-
-/** Parcours de la compétition : combien de participants entrent et sortent de chaque phase. */
-export function StructureFlow({ draft }: { draft: Draft }) {
-  const { stages, maxParticipants } = draft;
-  if (stages.length === 0) return null;
-  return (
-    <ol className={styles.flow} aria-label="Parcours de la compétition">
-      <li className={styles.flowStep}>
-        <strong className="tabular">{maxParticipants ?? 'Illimité'}</strong>
-        <span>{draft.participantType === 'TEAM' ? 'équipes inscrites' : 'joueurs inscrits'}</span>
-      </li>
-      {stages.map((stage, index) => {
-        const isLast = index === stages.length - 1;
-        const { qualifiers } = stage.settings;
-        return (
-          <li key={stage.key} className={styles.flowStep}>
-            <strong>{stage.name.trim() || `Phase ${index + 1}`}</strong>
-            <span>
-              {STAGE_FORMAT_LABELS[stage.format]}
-              {' · '}
-              {isLast ? 'classement final' : `${qualifiers ?? '?'} qualifiés`}
-            </span>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
 
 interface StructureSectionProps extends SectionProps {
   /** Les erreurs portent sur une position : elles ne valent plus quand les phases bougent. */
