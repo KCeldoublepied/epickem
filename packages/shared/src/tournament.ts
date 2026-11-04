@@ -121,3 +121,38 @@ export interface TournamentDetail {
   createdAt: string;
   updatedAt: string;
 }
+
+/** Tournoi tel qu'il apparaît dans une liste : de quoi afficher une carte. */
+export type TournamentSummary = Pick<
+  TournamentDetail,
+  | 'id'
+  | 'slug'
+  | 'name'
+  | 'status'
+  | 'visibility'
+  | 'startsAt'
+  | 'locationType'
+  | 'location'
+  | 'participantType'
+  | 'maxParticipants'
+  | 'registrationMode'
+  | 'registrationClosesAt'
+  | 'game'
+  | 'organizer'
+> & {
+  /** Joueurs ou équipes engagés dans le tournoi. */
+  participantCount: number;
+};
+
+/** Pagination par curseur : passer `nextCursor` en `cursor` pour la page suivante. */
+export const listQuerySchema = z.object({
+  cursor: z.uuid().optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+export type ListQuery = z.infer<typeof listQuerySchema>;
+
+export interface Page<T> {
+  items: T[];
+  /** null quand il n'y a plus rien à charger. */
+  nextCursor: string | null;
+}

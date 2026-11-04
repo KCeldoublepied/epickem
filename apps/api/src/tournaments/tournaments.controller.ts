@@ -1,12 +1,27 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiCookieAuth, ApiTags } from '@nestjs/swagger';
 import {
   type CreateTournamentInput,
   createTournamentSchema,
+  type ListQuery,
+  listQuerySchema,
+  type Page,
   type TournamentDetail,
+  type TournamentSummary,
 } from '@epickem/shared';
 import type { AuthUser } from '../auth/auth-user';
-import { CurrentUser } from '../auth/auth.decorators';
+import { CurrentUser, Public } from '../auth/auth.decorators';
 import { TournamentsService } from './tournaments.service';
 
 @ApiTags('tournaments')
@@ -16,11 +31,35 @@ import { TournamentsService } from './tournaments.service';
 export class TournamentsController {
   constructor(private readonly tournaments: TournamentsService) {}
 
+  @Public()
+  @Get()
+  list(@Query({ schema: listQuerySchema }) query: ListQuery): Promise<Page<TournamentSummary>> {
+    return this.tournaments.listPublic(query);
+  }
+
   @Post()
   create(
     @CurrentUser() user: AuthUser,
     @Body({ schema: createTournamentSchema }) body: CreateTournamentInput,
   ): Promise<TournamentDetail> {
     return this.tournaments.create(user.id, body);
+  }
+
+  @Put(':id')
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body({ schema: createTournamentSchema }) body: CreateTournamentInput,
+  ): Promise<TournamentDetail> {
+    return this.tournaments.update(user.id, id, body);
+  }
+
+  @Post(':id/publish')
+  @HttpCode(HttpStatus.OK)
+  publish(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<TournamentDetail> {
+    return this.tournaments.publish(user.id, id);
   }
 }

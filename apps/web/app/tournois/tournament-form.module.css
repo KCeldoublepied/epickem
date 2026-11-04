@@ -4,16 +4,6 @@
   min-height: 100vh;
 }
 
-.header {
-  padding: 16px 40px;
-  border-bottom: 1px solid var(--epk-divider);
-  background: var(--epk-surface);
-}
-
-.home {
-  display: inline-flex;
-}
-
 .main {
   max-width: 1120px;
   margin: 0 auto;
@@ -215,8 +205,10 @@
   color: var(--epk-text);
 }
 
-.preview,
-.created {
+.preview {
+  flex: 1 1 280px;
+  position: sticky;
+  top: 24px;
   background: var(--epk-surface);
   border: 1px solid var(--epk-divider);
   border-radius: 12px;
@@ -226,20 +218,9 @@
   gap: 12px;
 }
 
-.preview {
-  flex: 1 1 280px;
-  position: sticky;
-  top: 24px;
-}
-
-.preview h2,
-.created h2 {
+.preview h2 {
   margin: 0;
   font-size: 1.125rem;
-}
-
-.created p {
-  margin: 0;
 }
 
 .badge {
@@ -250,6 +231,43 @@
   color: var(--epk-on-badge);
   font-size: 0.8125rem;
   font-weight: 600;
+}
+
+.badge[data-status='REGISTRATION'] {
+  background: var(--epk-badge-success);
+}
+
+.badge[data-status='IN_PROGRESS'] {
+  background: var(--epk-badge-live);
+}
+
+.badge[data-status='CANCELLED'] {
+  background: var(--epk-badge-error);
+}
+
+.badge[data-status='COMPLETED'] {
+  background: var(--epk-surface-raised);
+  color: var(--epk-text);
+  border: 1px solid var(--epk-border);
+}
+
+/* Confirmation (enregistré, créé). */
+.success {
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--epk-success);
+  background: var(--epk-surface);
+}
+
+/* Regroupe les sections pour toutes les désactiver d'un coup (tournoi commencé, envoi en cours). */
+.sections {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .previewName {
@@ -277,10 +295,6 @@
 }
 
 @media (max-width: 720px) {
-  .header {
-    padding: 12px 16px;
-  }
-
   .main {
     padding: 24px 16px 48px;
   }
