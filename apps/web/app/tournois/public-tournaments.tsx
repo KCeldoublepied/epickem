@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 
+import { RegistrationAction, useRegistrationContext } from './registration-action';
 import { TournamentCard, TournamentGrid } from './tournament-card';
 import styles from './tournois.module.css';
 import { useTournamentList } from './use-tournament-list';
 
 export function PublicTournaments() {
   const list = useTournamentList('/tournaments');
+  const { context, reload } = useRegistrationContext();
 
   return (
     <TournamentGrid
@@ -21,7 +23,19 @@ export function PublicTournaments() {
         </>
       }
     >
-      {(tournament) => <TournamentCard tournament={tournament} showOrganizer />}
+      {(tournament) => (
+        <TournamentCard
+          tournament={tournament}
+          showOrganizer
+          actions={
+            <RegistrationAction
+              tournament={tournament}
+              context={context}
+              onChange={() => Promise.all([reload(), list.reload()])}
+            />
+          }
+        />
+      )}
     </TournamentGrid>
   );
 }

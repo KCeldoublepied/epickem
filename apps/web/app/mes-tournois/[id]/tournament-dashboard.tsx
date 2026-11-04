@@ -36,6 +36,7 @@ import {
   validate,
 } from './draft';
 import { GameSection, teamPatch } from './game-section';
+import { RegistrationsSection } from './registrations-section';
 import { StructureFlow } from './structure-flow';
 import { participantUnit, StructureSection } from './structure-section';
 
@@ -351,6 +352,12 @@ function Dashboard({ initial, games, justCreated }: DashboardProps) {
             {section === 'general' && <GeneralSection {...props} />}
             {section === 'game' && <GameSection {...props} />}
             {section === 'participants' && <ParticipantsSection {...props} />}
+            {section === 'registrations' && (
+              <RegistrationsSection
+                tournamentId={tournament.id}
+                maxParticipants={draft.maxParticipants}
+              />
+            )}
             {section === 'structure' && (
               <StructureSection {...props} clearErrors={() => setErrors({})} />
             )}

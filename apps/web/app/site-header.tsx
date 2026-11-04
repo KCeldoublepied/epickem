@@ -12,6 +12,7 @@ import styles from './site-header.module.css';
 const LINKS = [
   { href: '/tournois', label: 'Tournois' },
   { href: '/mes-tournois', label: 'Mes tournois' },
+  { href: '/equipes', label: 'Mes équipes' },
 ] as const;
 
 /** null tant que la session n'est pas vérifiée ; false si personne n'est connecté. */

@@ -10,13 +10,14 @@ import { Env } from './config/env';
 import { GamesModule } from './games/games.module';
 import { HealthController } from './health/health.controller';
 import { PrismaModule } from './prisma/prisma.module';
+import { TeamsModule } from './teams/teams.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
 import { UsersModule } from './users/users.module';
 
 z.config(z.locales.fr());
 
 @Module({
-  imports: [PrismaModule, AuthModule, UsersModule, GamesModule, TournamentsModule],
+  imports: [PrismaModule, AuthModule, UsersModule, GamesModule, TournamentsModule, TeamsModule],
   controllers: [HealthController],
   providers: [
     { provide: APP_PIPE, useValue: createValidationPipe() },

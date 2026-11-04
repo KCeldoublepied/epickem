@@ -57,7 +57,14 @@ export function useTournamentList(path: ListPath) {
     }
   }
 
-  return { items, state, hasMore: nextCursor !== null, loadingMore, loadMore };
+  /** Recharge la liste depuis le début, par exemple après une inscription. */
+  async function reload() {
+    const page = await fetchPage(path, null);
+    setItems(page.items);
+    setNextCursor(page.nextCursor);
+  }
+
+  return { items, state, hasMore: nextCursor !== null, loadingMore, loadMore, reload };
 }
 
 export type TournamentList = ReturnType<typeof useTournamentList>;

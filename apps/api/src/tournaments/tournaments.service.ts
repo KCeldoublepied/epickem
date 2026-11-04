@@ -219,7 +219,7 @@ export class TournamentsService {
   }
 
   /** 404 si le tournoi n'existe pas, 403 si le compte ne l'organise pas ; renvoie son statut. */
-  private async assertOrganizer(userId: string, tournamentId: string) {
+  async assertOrganizer(userId: string, tournamentId: string) {
     const tournament = await this.prisma.tournament.findUnique({
       where: { id: tournamentId },
       select: { organizerId: true, status: true },

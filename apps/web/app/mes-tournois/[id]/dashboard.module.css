@@ -258,6 +258,40 @@
   opacity: 0.5;
 }
 
+.entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.entry {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border: 1px solid var(--epk-divider);
+  border-radius: 10px;
+  background: var(--epk-background);
+}
+
+.entry p {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.entry span {
+  font-size: 0.875rem;
+  color: var(--epk-text-muted);
+}
+
 /* Schéma de la compétition : les phases de haut en bas, leurs étapes de gauche à droite. */
 .flow,
 .flowSteps {

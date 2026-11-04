@@ -36,6 +36,7 @@ export const SECTIONS = [
   ['game', 'Jeu et lieu'],
   ['participants', 'Participants'],
   ['structure', 'Structure'],
+  ['registrations', 'Inscriptions'],
 ] as const;
 export type SectionId = (typeof SECTIONS)[number][0];
 
