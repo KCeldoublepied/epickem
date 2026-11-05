@@ -165,7 +165,8 @@ model Season {
 /// Tournoi interne ou importé.
 model Tournament {
   id                   String           @id @default(uuid()) @db.Uuid
-  gameId               String           @map("game_id") @db.Uuid
+  /// Vide tant que l'organisateur n'a pas choisi le jeu : obligatoire pour publier.
+  gameId               String?          @map("game_id") @db.Uuid
   organizerId          String?          @map("organizer_id") @db.Uuid
   seasonId             String?          @map("season_id") @db.Uuid
   /// Renseigné si le tournoi est importé : il est alors en lecture seule.
@@ -192,10 +193,13 @@ model Tournament {
   customFields         Json             @default("[]") @map("custom_fields")
   /// Barème des pronostics par défaut (points, bonus score exact, multiplicateur par tour).
   scoring              Json             @default("{}")
+  /// Réglages propres au jeu (région, cartes, type de sélection…), décrits par GAME_CATALOG
+  /// dans @epickem/shared.
+  gameSettings         Json             @default("{}") @map("game_settings")
   createdAt            DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt            DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  game            Game             @relation(fields: [gameId], references: [id])
+  game            Game?            @relation(fields: [gameId], references: [id], onDelete: Restrict)
   organizer       User?            @relation("TournamentOrganizer", fields: [organizerId], references: [id], onDelete: SetNull)
   season          Season?          @relation(fields: [seasonId], references: [id], onDelete: SetNull)
   source          ExternalSource?  @relation(fields: [sourceId], references: [id], onDelete: SetNull)
@@ -266,8 +270,8 @@ model Stage {
   format         StageFormat
   status         StageStatus    @default(PENDING)
   predictionMode PredictionMode @default(MATCH) @map("prediction_mode")
-  /// Réglages : BO par tour, départage, seeding, nombre de rondes suisses,
-  /// points FFA, règles de qualification vers l'étape suivante…
+  /// Réglages selon le format (stageInputSchema dans @epickem/shared) : BO, départage, seeding,
+  /// rondes suisses, poules, points FFA, qualifiés pour l'étape suivante…
   settings       Json           @default("{}")
   startsAt       DateTime?      @map("starts_at") @db.Timestamptz(3)
   /// Verrouillage des pronostics « arbre complet » de l'étape.

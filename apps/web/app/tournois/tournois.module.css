@@ -1,0 +1,236 @@
+/* Listes de tournois : /tournois (tous) et /mes-tournois (ceux que j'organise). */
+
+.page {
+  min-height: 100vh;
+}
+
+.main {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 40px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.title {
+  margin: 0;
+  font-size: 2.125rem;
+}
+
+.intro {
+  margin: 8px 0 0;
+  color: var(--epk-text-muted);
+  max-width: 60ch;
+}
+
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.grid > li {
+  display: flex;
+}
+
+.card {
+  flex: 1;
+  min-width: 0;
+  background: var(--epk-surface);
+  border: 1px solid var(--epk-divider);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--epk-on-badge);
+  background: var(--epk-badge-accent);
+}
+
+.badge[data-status='REGISTRATION'] {
+  background: var(--epk-badge-success);
+}
+
+.badge[data-status='IN_PROGRESS'] {
+  background: var(--epk-badge-live);
+}
+
+.badge[data-status='CANCELLED'] {
+  background: var(--epk-badge-error);
+}
+
+.badge[data-status='COMPLETED'] {
+  background: var(--epk-surface-raised);
+  color: var(--epk-text);
+  border: 1px solid var(--epk-border);
+}
+
+.tag {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: 1px solid var(--epk-border);
+  color: var(--epk-text-muted);
+}
+
+.cardTitle {
+  margin: 0;
+  font-family: var(--epk-font-body), system-ui, sans-serif;
+  font-size: 1.25rem;
+  overflow-wrap: anywhere;
+}
+
+.details {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  font-size: 0.875rem;
+}
+
+.details dt {
+  color: var(--epk-text-muted);
+}
+
+.details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.cardActions {
+  margin-top: auto;
+  padding-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.primary,
+.more,
+.secondaryLink {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.primary {
+  border: 0;
+  background: var(--epk-primary);
+  color: var(--epk-on-primary);
+}
+
+.primary:hover {
+  background: var(--epk-primary-hover);
+  color: var(--epk-on-primary);
+}
+
+.more,
+.secondaryLink {
+  border: 1px solid var(--epk-border);
+  background: transparent;
+  color: var(--epk-text);
+}
+
+.more {
+  align-self: center;
+}
+
+.primary:disabled,
+.more:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.cardError {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--epk-error);
+}
+
+.status {
+  margin: 0;
+  color: var(--epk-text-muted);
+}
+
+.notice,
+.alert {
+  padding: 20px;
+  border-radius: 12px;
+  background: var(--epk-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.notice {
+  border: 1px dashed var(--epk-border);
+}
+
+.alert {
+  border: 1px solid var(--epk-error);
+}
+
+.notice p,
+.alert p {
+  margin: 0;
+}
+
+/* Masqué à l'écran, lu par les lecteurs d'écran. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .main {
+    padding: 24px 16px 48px;
+  }
+
+  .title {
+    font-size: 1.75rem;
+  }
+
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

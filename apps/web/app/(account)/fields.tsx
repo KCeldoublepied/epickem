@@ -120,6 +120,4 @@ export function FormAlert({ message }: { message: string | null }) {
   );
 }
 
-/** Message à afficher quand l'appel à l'API a échoué sans réponse exploitable. */
-export const NETWORK_ERROR = 'Impossible de joindre le serveur. Réessayez dans un instant.';
 export const TOO_MANY_ATTEMPTS = 'Trop de tentatives. Patientez une minute avant de réessayer.';

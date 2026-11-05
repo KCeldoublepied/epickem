@@ -16,7 +16,12 @@ export const APP_TAGLINE = 'Pronostics. Tournois. Communauté.';
 
 export * from './auth';
 export * from './brand';
+export * from './game-catalog';
+export * from './registration';
+export * from './stages';
+export * from './team';
 export * from './theme';
+export * from './tournament';
 
 /** Réponse de la route de santé de l'API (`GET /health`). */
 export interface HealthStatus {

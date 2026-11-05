@@ -1,0 +1,409 @@
+/* Dashboard d'un tournoi : menu des réglages à gauche, section en cours à droite. */
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.titleBlock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  min-width: 0;
+}
+
+.titleBlock h1 {
+  overflow-wrap: anywhere;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.nav {
+  position: sticky;
+  top: 24px;
+}
+
+.nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.navItem {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--epk-text);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.navItem:hover {
+  background: var(--epk-surface);
+}
+
+.navItem[aria-current='true'] {
+  background: var(--epk-surface-raised);
+  box-shadow: inset 3px 0 0 var(--epk-primary);
+}
+
+.navCount {
+  min-width: 22px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--epk-badge-error);
+  color: var(--epk-on-badge);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Le bouton reste à portée de main dans les sections longues (phases, cartes…). */
+.saveBar {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border: 1px solid var(--epk-divider);
+  border-radius: 12px;
+  background: var(--epk-surface);
+}
+
+.panel {
+  border: 1px solid var(--epk-divider);
+  border-radius: 12px;
+  padding: 20px 24px;
+  background: var(--epk-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panel h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.panel p {
+  margin: 0;
+}
+
+.checklist {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.summary {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px 16px;
+}
+
+.summary dt {
+  color: var(--epk-text-muted);
+}
+
+.summary dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.presets {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.presets p {
+  margin: 0;
+}
+
+.presetList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.preset {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid var(--epk-divider);
+  background: transparent;
+  color: var(--epk-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.preset[aria-pressed='true'] {
+  border: 2px solid var(--epk-primary);
+  background: var(--epk-surface-raised);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.stack > p {
+  margin: 0;
+}
+
+.empty {
+  padding: 24px;
+  border: 1px dashed var(--epk-border);
+  border-radius: 12px;
+  text-align: center;
+  color: var(--epk-text-muted);
+}
+
+.stages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.stages:empty {
+  display: none;
+}
+
+.stageActions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stageButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.small {
+  min-width: 44px;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--epk-border);
+  background: transparent;
+  color: var(--epk-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.small:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.entry {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border: 1px solid var(--epk-divider);
+  border-radius: 10px;
+  background: var(--epk-background);
+}
+
+.entry p {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.entry span {
+  font-size: 0.875rem;
+  color: var(--epk-text-muted);
+}
+
+/* Schéma de la compétition : les phases de haut en bas, leurs étapes de gauche à droite. */
+.flow,
+.flowSteps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+}
+
+.flow {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.flowPhase {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.flowLink {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--epk-text-muted);
+}
+
+.flowCard {
+  padding: 14px 16px;
+  border: 1px solid var(--epk-divider);
+  border-radius: 10px;
+  background: var(--epk-background);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.flowTitle {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  align-items: baseline;
+  overflow-wrap: anywhere;
+}
+
+.flowTitle > span {
+  font-size: 0.875rem;
+  color: var(--epk-text-muted);
+}
+
+.flowSteps {
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+
+.flowStep {
+  flex: 1 1 120px;
+  max-width: 200px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.8125rem;
+}
+
+.flowStep > span:not(.bars) {
+  color: var(--epk-text-muted);
+}
+
+/* Une barre par match : les tours d'un arbre dessinent une pyramide. */
+.bars {
+  width: 64px;
+  height: 60px;
+  margin-bottom: 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--epk-primary);
+}
+
+@media (max-width: 860px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .nav {
+    position: static;
+  }
+
+  .nav ul {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .navItem {
+    width: auto;
+  }
+
+  .navItem[aria-current='true'] {
+    box-shadow: inset 0 -3px 0 var(--epk-primary);
+  }
+}
+
+@media (max-width: 720px) {
+  .panel {
+    padding: 16px;
+  }
+}

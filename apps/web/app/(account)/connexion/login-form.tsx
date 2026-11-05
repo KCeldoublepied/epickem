@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
 import { type AuthResponse, loginSchema } from '@epickem/shared';
 
-import { ApiRequestError, apiFetch } from '../../api-client';
+import { ApiRequestError, apiFetch, NETWORK_ERROR } from '../../api-client';
 import styles from '../compte.module.css';
-import { FormAlert, NETWORK_ERROR, PasswordField, TextField, TOO_MANY_ATTEMPTS } from '../fields';
+import { FormAlert, PasswordField, TextField, TOO_MANY_ATTEMPTS } from '../fields';
 
 export function LoginForm() {
   const router = useRouter();
