@@ -18,6 +18,12 @@
   overflow-wrap: anywhere;
 }
 
+.memberActions {
+  flex: none;
+  display: flex;
+  gap: 6px;
+}
+
 .muted {
   font-size: 0.875rem;
   color: var(--epk-text-muted);

@@ -61,6 +61,18 @@ export const createTournamentSchema = z
   });
 export type CreateTournamentInput = z.infer<typeof createTournamentSchema>;
 
+const FIELD_TEXT_ERROR = 'De 1 à 50 caractères.';
+const fieldText = z.string().trim().min(1, FIELD_TEXT_ERROR).max(50, FIELD_TEXT_ERROR);
+
+/** Question posée à l'inscription : pseudo en jeu, rang, plateforme… */
+export const customFieldSchema = z.object({
+  label: fieldText,
+  required: z.boolean().default(false),
+  /** Réponses possibles ; vide pour une réponse libre. */
+  options: z.array(fieldText).max(30, 'Au plus 30 réponses.').default([]),
+});
+export type CustomField = z.infer<typeof customFieldSchema>;
+
 const TEAM_SIZE_ERROR = 'Nombre entier de 1 à 100.';
 const teamSize = z.int(TEAM_SIZE_ERROR).min(1, TEAM_SIZE_ERROR).max(100, TEAM_SIZE_ERROR);
 const SEATS_ERROR = 'Nombre entier de 2 à 4 096.';
@@ -91,6 +103,7 @@ export const tournamentSettingsSchema = z
     registrationOpensAt: dateTimeSchema.optional(),
     registrationClosesAt: dateTimeSchema.optional(),
     checkInOpensAt: dateTimeSchema.optional(),
+    customFields: z.array(customFieldSchema).max(10, 'Au plus 10 champs.').default([]),
     /** Phases de la compétition, dans l'ordre ; chacune a son propre format. */
     stages: z.array(stageInputSchema).max(MAX_STAGES, `Au plus ${MAX_STAGES} phases.`).default([]),
   })
@@ -123,6 +136,16 @@ export const tournamentSettingsSchema = z
     if (isBefore(input.startsAt, input.checkInOpensAt)) {
       issue('checkInOpensAt', 'Doit être avant le début du tournoi');
     }
+
+    input.customFields.forEach(({ label }, index) => {
+      if (input.customFields.findIndex((field) => field.label === label) !== index) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['customFields', index, 'label'],
+          message: 'Ce champ existe déjà.',
+        });
+      }
+    });
 
     for (const { path, message } of stageStructureIssues(input.stages, input)) {
       ctx.addIssue({ code: 'custom', path, message });
@@ -175,6 +198,8 @@ export interface TournamentDetail {
   registrationOpensAt: string | null;
   registrationClosesAt: string | null;
   checkInOpensAt: string | null;
+  /** Questions posées à l'inscription. */
+  customFields: CustomField[];
   /** null tant que l'organisateur n'a pas choisi le jeu. */
   game: GameSummary | null;
   /** Réglages propres au jeu, décrits par GAME_CATALOG. */
@@ -201,6 +226,8 @@ export type TournamentSummary = Pick<
   | 'maxParticipants'
   | 'registrationMode'
   | 'registrationClosesAt'
+  | 'checkInOpensAt'
+  | 'customFields'
   | 'game'
   | 'organizer'
 > & {

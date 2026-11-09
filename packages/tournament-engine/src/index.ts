@@ -53,7 +53,8 @@ function eliminationRounds(
   entrants: number,
   qualifiers: number,
   bestOf: number,
-  finalBestOf = bestOf,
+  /** Formats propres aux derniers tours, selon le nombre de matchs du tour dans l'arbre. */
+  bestOfBySlots: Record<number, number | undefined> = {},
 ): PreviewStep[] {
   const steps: PreviewStep[] = [];
   const byes = byeCount(entrants);
@@ -66,7 +67,7 @@ function eliminationRounds(
     steps.push({
       label: ROUND_NAMES[slots] ?? `Tour ${round}`,
       matches,
-      bestOf: slots === 1 ? finalBestOf : bestOf,
+      bestOf: bestOfBySlots[slots] ?? bestOf,
       ...(round === 1 && byes > 0 && { detail: plural(byes, 'exempt') }),
     });
     remaining -= matches;
@@ -108,8 +109,13 @@ export function stagePreview(
 
   switch (stage.format) {
     case 'SINGLE_ELIMINATION': {
-      const { bestOf, finalBestOf, thirdPlaceMatch } = stage.settings;
-      const steps = eliminationRounds(entrants, qualifiers, bestOf, finalBestOf);
+      const { bestOf, quarterFinalBestOf, semiFinalBestOf, finalBestOf, thirdPlaceMatch } =
+        stage.settings;
+      const steps = eliminationRounds(entrants, qualifiers, bestOf, {
+        1: finalBestOf,
+        2: semiFinalBestOf,
+        4: quarterFinalBestOf,
+      });
       if (thirdPlaceMatch && qualifiers === 1 && entrants >= 4) {
         steps.push({ label: 'Petite finale', matches: 1, bestOf });
       }

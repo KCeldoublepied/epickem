@@ -9,6 +9,7 @@ import {
 import {
   type ApiErrorIssue,
   type CreateTournamentInput,
+  type CustomField,
   type GameSettings,
   gameStructureIssues,
   type ListQuery,
@@ -45,6 +46,7 @@ const TOURNAMENT_SELECT = {
   registrationOpensAt: true,
   registrationClosesAt: true,
   checkInOpensAt: true,
+  customFields: true,
   gameSettings: true,
   createdAt: true,
   updatedAt: true,
@@ -79,6 +81,8 @@ const SUMMARY_SELECT = {
   maxParticipants: true,
   registrationMode: true,
   registrationClosesAt: true,
+  checkInOpensAt: true,
+  customFields: true,
   game: { select: { id: true, slug: true, name: true } },
   organizer: { select: { id: true, username: true, displayName: true } },
   _count: { select: { participants: true } },
@@ -105,27 +109,65 @@ export class TournamentsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(organizerId: string, input: CreateTournamentInput): Promise<TournamentDetail> {
-    const data = {
+    return this.insert({
       name: input.name,
       startsAt: new Date(input.startsAt),
       endsAt: new Date(input.endsAt),
       organizerId,
-    };
+    });
+  }
 
-    const base = slugify(input.name);
-    for (let attempt = 0; ; attempt++) {
-      const slug = attempt === 0 ? base : `${base}-${randomBytes(3).toString('hex')}`;
-      try {
-        const row = await this.prisma.tournament.create({
-          data: { ...data, slug },
-          select: TOURNAMENT_SELECT,
-        });
-        return toTournamentDetail(row);
-      } catch (error) {
-        if (isUniqueViolation(error) && attempt < SLUG_ATTEMPTS) continue;
-        throw error;
-      }
-    }
+  /** Nouveau brouillon aux mêmes réglages, sans dates ni inscrits : pour un tournoi récurrent. */
+  async duplicate(userId: string, tournamentId: string): Promise<TournamentDetail> {
+    await this.assertOrganizer(userId, tournamentId);
+    const { name, stages, customFields, scoring, gameSettings, ...source } =
+      await this.prisma.tournament.findUniqueOrThrow({
+        where: { id: tournamentId },
+        select: {
+          name: true,
+          gameId: true,
+          description: true,
+          rules: true,
+          visibility: true,
+          locationType: true,
+          location: true,
+          participantType: true,
+          teamSizeMin: true,
+          teamSizeMax: true,
+          maxParticipants: true,
+          registrationMode: true,
+          customFields: true,
+          scoring: true,
+          gameSettings: true,
+          stages: {
+            select: { order: true, name: true, format: true, predictionMode: true, settings: true },
+          },
+        },
+      });
+    return this.insert({
+      ...source,
+      name: `${name.slice(0, 92)} (copie)`,
+      organizerId: userId,
+      customFields: customFields as Prisma.InputJsonValue,
+      scoring: scoring as Prisma.InputJsonValue,
+      gameSettings: gameSettings as Prisma.InputJsonValue,
+      stages: {
+        create: stages.map(({ settings, ...stage }) => ({
+          ...stage,
+          settings: settings as Prisma.InputJsonValue,
+        })),
+      },
+    });
+  }
+
+  /** Tournoi accessible par son lien, même non répertorié : c'est l'accès sur invitation. */
+  async findBySlug(slug: string): Promise<TournamentSummary> {
+    const row = await this.prisma.tournament.findFirst({
+      where: { slug, visibility: { in: ['PUBLIC', 'UNLISTED'] }, status: PUBLIC_LISTING.status },
+      select: SUMMARY_SELECT,
+    });
+    if (!row) throw new NotFoundException('Tournoi introuvable');
+    return toTournamentSummary(row);
   }
 
   listPublic(query: ListQuery): Promise<Page<TournamentSummary>> {
@@ -218,6 +260,25 @@ export class TournamentsService {
     return toTournamentDetail(row);
   }
 
+  private async insert(
+    data: Omit<Prisma.TournamentUncheckedCreateInput, 'slug'>,
+  ): Promise<TournamentDetail> {
+    const base = slugify(data.name);
+    for (let attempt = 0; ; attempt++) {
+      const slug = attempt === 0 ? base : `${base}-${randomBytes(3).toString('hex')}`;
+      try {
+        const row = await this.prisma.tournament.create({
+          data: { ...data, slug },
+          select: TOURNAMENT_SELECT,
+        });
+        return toTournamentDetail(row);
+      } catch (error) {
+        if (isUniqueViolation(error) && attempt < SLUG_ATTEMPTS) continue;
+        throw error;
+      }
+    }
+  }
+
   /** 404 si le tournoi n'existe pas, 403 si le compte ne l'organise pas ; renvoie son statut. */
   async assertOrganizer(userId: string, tournamentId: string) {
     const tournament = await this.prisma.tournament.findUnique({
@@ -272,7 +333,7 @@ export function slugify(name: string): string {
 const toDate = (value: string | undefined) => (value === undefined ? null : new Date(value));
 
 /** Même erreur que la validation du corps de la requête, avec les mêmes chemins de champs. */
-function invalidData(issues: { path: (string | number)[]; message: string }[]) {
+export function invalidData(issues: { path: (string | number)[]; message: string }[]) {
   const details: ApiErrorIssue[] = issues.map(({ path, message }) => ({
     path: path.join('.'),
     message,
@@ -313,6 +374,7 @@ function toTournamentDetail(row: TournamentRow): TournamentDetail {
     registrationOpensAt: iso(row.registrationOpensAt),
     registrationClosesAt: iso(row.registrationClosesAt),
     checkInOpensAt: iso(row.checkInOpensAt),
+    customFields: row.customFields as CustomField[],
     gameSettings: row.gameSettings as GameSettings,
     // Écrits après validation par stageInputSchema : la forme du JSON est garantie.
     stages: row.stages.map((stage) => ({ ...stage, startsAt: iso(stage.startsAt) }) as StageDetail),
@@ -326,6 +388,8 @@ function toTournamentSummary({ _count, ...row }: SummaryRow): TournamentSummary 
     ...row,
     startsAt: iso(row.startsAt),
     registrationClosesAt: iso(row.registrationClosesAt),
+    checkInOpensAt: iso(row.checkInOpensAt),
+    customFields: row.customFields as CustomField[],
     participantCount: _count.participants,
   };
 }

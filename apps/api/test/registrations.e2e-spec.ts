@@ -16,7 +16,8 @@ import { PrismaService } from '../src/prisma/prisma.service';
 
 // Tests sur une vraie base PostgreSQL : les données créées ici sont supprimées à la fin.
 const DOMAIN = 'registrations.e2e.test';
-const run = Date.now().toString(36);
+// Le préfixe évite les pseudos identiques avec les autres fichiers de tests, lancés en parallèle.
+const run = `r${Date.now().toString(36)}`;
 
 interface Account {
   id: string;
@@ -208,7 +209,7 @@ describe('inscriptions', () => {
       const { id: teamId } = await team(captain);
       const res = await enter(id, captain, { teamId }).expect(409);
       expect(message(res)).toBe(
-        'Ce tournoi demande de 2 à 3 joueurs par équipe : la vôtre en compte 1',
+        'Ce tournoi demande au moins 2 titulaires : votre équipe en compte 1',
       );
     });
 
@@ -229,20 +230,6 @@ describe('inscriptions', () => {
       await cancel(id, (body as MyRegistration).id, captain).expect(204);
       expect(await participants(id)).toBe(0);
     });
-
-    it('ne donne pas deux fois la dernière place', async () => {
-      const id = await teamTournament({ maxParticipants: 2 });
-      await enter(id, captain, { teamId: (await team(captain, organizer)).id }).expect(201);
-      const first = await team(otherCaptain, player);
-      const second = await team(player, otherCaptain);
-
-      const results = await Promise.all([
-        enter(id, otherCaptain, { teamId: first.id }),
-        enter(id, player, { teamId: second.id }),
-      ]);
-      expect(results.map(({ status }) => status).sort()).toEqual([201, 409]);
-      expect(await participants(id)).toBe(2);
-    });
   });
 
   describe('validation par l’organisateur', () => {
@@ -257,7 +244,7 @@ describe('inscriptions', () => {
         .get(`/me/tournaments/${id}/registrations`)
         .set(bearer(organizer))
         .expect(200);
-      expect(list.body as TournamentRegistration[]).toEqual([
+      expect(list.body as TournamentRegistration[]).toMatchObject([
         { id: registration.id, status: 'PENDING', name: `joueur_${run}`, memberCount: null },
       ]);
 
@@ -277,7 +264,7 @@ describe('inscriptions', () => {
       await enter(id, player).expect(409);
     });
 
-    it('réserve la validation à l’organisateur et refuse un tournoi complet', async () => {
+    it('réserve la validation à l’organisateur et met en attente quand c’est complet', async () => {
       const id = await tournament({ registrationMode: 'APPROVAL', maxParticipants: 2 });
       const entries = await Promise.all(
         [player, captain, otherCaptain].map(async (account) => {
@@ -290,9 +277,211 @@ describe('inscriptions', () => {
 
       await review(id, entries[0] ?? '', 'ACCEPTED').expect(204);
       await review(id, entries[1] ?? '', 'ACCEPTED').expect(204);
-      expect(message(await review(id, entries[2] ?? '', 'ACCEPTED').expect(409))).toMatch(
-        /complet/,
+      await review(id, entries[2] ?? '', 'ACCEPTED').expect(204);
+      const mine = await http().get('/me/registrations').set(bearer(otherCaptain)).expect(200);
+      const seen = (mine.body as MyRegistration[]).find((item) => item.tournamentId === id);
+      expect(seen).toMatchObject({ status: 'WAITLISTED', waitlistPosition: 1 });
+      expect(await participants(id)).toBe(2);
+    });
+  });
+
+  describe('liste d’attente', () => {
+    it('ne donne jamais une place ni un rang deux fois, même en simultané', async () => {
+      const id = await tournament({ maxParticipants: 3 });
+      const accounts = await Promise.all(
+        Array.from({ length: 8 }, (_, index) => register(`course${index}`)),
       );
+
+      const results = await Promise.all(accounts.map((account) => enter(id, account)));
+      const registrations = results.map(({ body }) => body as MyRegistration);
+      expect(registrations.filter(({ status }) => status === 'ACCEPTED')).toHaveLength(3);
+      expect(await participants(id)).toBe(3);
+      expect(
+        registrations.flatMap(({ waitlistPosition: rank }) => rank ?? []).sort((a, b) => a - b),
+      ).toEqual([1, 2, 3, 4, 5]);
+    });
+
+    const position = async (id: string, as: Account) => {
+      const res = await http().get('/me/registrations').set(bearer(as)).expect(200);
+      return (res.body as MyRegistration[]).find((item) => item.tournamentId === id);
+    };
+
+    it('numérote les suivants et donne une place libérée au premier', async () => {
+      const id = await tournament({ maxParticipants: 2 });
+      const first = (await enter(id, organizer).expect(201)).body as MyRegistration;
+      await enter(id, captain).expect(201);
+      const waiting = (await enter(id, otherCaptain).expect(201)).body as MyRegistration;
+      expect(waiting).toMatchObject({ status: 'WAITLISTED', waitlistPosition: 1 });
+      await enter(id, player).expect(201);
+      expect(await position(id, player)).toMatchObject({ waitlistPosition: 2 });
+
+      await cancel(id, first.id, organizer).expect(204);
+      expect(await position(id, otherCaptain)).toMatchObject({
+        status: 'ACCEPTED',
+        waitlistPosition: null,
+      });
+      expect(await position(id, player)).toMatchObject({ status: 'WAITLISTED' });
+      expect(await participants(id)).toBe(2);
+    });
+
+    it('ne promeut personne quand quelqu’un quitte la liste d’attente', async () => {
+      const id = await tournament({ maxParticipants: 2 });
+      await enter(id, organizer).expect(201);
+      await enter(id, captain).expect(201);
+      const waiting = (await enter(id, otherCaptain).expect(201)).body as MyRegistration;
+      await enter(id, player).expect(201);
+
+      await cancel(id, waiting.id, otherCaptain).expect(204);
+      expect(await position(id, player)).toMatchObject({ status: 'WAITLISTED' });
+      expect(await participants(id)).toBe(2);
+    });
+  });
+
+  describe('check-in', () => {
+    const open = { checkInOpensAt: '2020-01-01T00:00:00Z' };
+    const checkIn = (id: string, registrationId: string, as: Account) =>
+      http().post(`/tournaments/${id}/registrations/${registrationId}/check-in`).set(bearer(as));
+    const close = (id: string, as = organizer) =>
+      http().post(`/tournaments/${id}/check-in/close`).set(bearer(as));
+
+    it('n’est possible que pendant la plage horaire et pour son inscription', async () => {
+      const notYet = await tournament({ checkInOpensAt: '2030-11-30T00:00:00Z' });
+      const early = (await enter(notYet, player).expect(201)).body as MyRegistration;
+      await checkIn(notYet, early.id, player).expect(409);
+
+      const id = await tournament(open);
+      const { id: registrationId } = (await enter(id, player).expect(201)).body as MyRegistration;
+      await checkIn(id, registrationId, captain).expect(403);
+      await checkIn(id, registrationId, player).expect(204);
+      const res = await http().get('/me/registrations').set(bearer(player)).expect(200);
+      const mine = (res.body as MyRegistration[]).find((item) => item.tournamentId === id);
+      expect(mine?.checkedIn).toBe(true);
+    });
+
+    it('remplace les absents par les présents de la liste d’attente', async () => {
+      const id = await tournament({ ...open, maxParticipants: 2 });
+      const present = (await enter(id, organizer).expect(201)).body as MyRegistration;
+      await enter(id, captain).expect(201);
+      await enter(id, otherCaptain).expect(201);
+      const replacement = (await enter(id, player).expect(201)).body as MyRegistration;
+      await checkIn(id, present.id, organizer).expect(204);
+      await checkIn(id, replacement.id, player).expect(204);
+
+      await close(id, player).expect(403);
+      await close(id).expect(204);
+
+      const list = await http()
+        .get(`/me/tournaments/${id}/registrations`)
+        .set(bearer(organizer))
+        .expect(200);
+      const statuses = Object.fromEntries(
+        (list.body as TournamentRegistration[]).map(({ name, status }) => [name, status]),
+      );
+      expect(statuses).toEqual({
+        [`orga_${run}`]: 'ACCEPTED',
+        [`chef_${run}`]: 'CANCELLED',
+        [`chef2_${run}`]: 'WAITLISTED',
+        [`joueur_${run}`]: 'ACCEPTED',
+      });
+      expect(await participants(id)).toBe(2);
+      await enter(id, captain).expect(409);
+    });
+
+    it('ne se clôt pas sans plage ouverte', async () => {
+      await close(await tournament()).expect(409);
+      await close(await tournament({ checkInOpensAt: '2030-11-30T00:00:00Z' })).expect(409);
+    });
+  });
+
+  describe('champs personnalisés', () => {
+    const customFields = [
+      { label: 'Pseudo en jeu', required: true },
+      { label: 'Rang', options: ['Or', 'Argent'] },
+    ];
+
+    it('exige les réponses et les montre à l’organisateur', async () => {
+      const id = await tournament({ customFields });
+      const missing = await enter(id, player).expect(400);
+      expect((missing.body as ApiError).issues?.map((issue) => issue.path)).toEqual([
+        'customFieldValues.Pseudo en jeu',
+      ]);
+      await enter(id, player, {
+        customFieldValues: { 'Pseudo en jeu': 'Faker', Rang: 'Bronze' },
+      }).expect(400);
+
+      await enter(id, player, {
+        customFieldValues: { 'Pseudo en jeu': 'Faker', Rang: 'Or', Inconnu: 'x' },
+      }).expect(201);
+      const list = await http()
+        .get(`/me/tournaments/${id}/registrations`)
+        .set(bearer(organizer))
+        .expect(200);
+      expect((list.body as TournamentRegistration[])[0]?.customFieldValues).toEqual({
+        'Pseudo en jeu': 'Faker',
+        Rang: 'Or',
+      });
+    });
+  });
+
+  describe('seeding manuel', () => {
+    it('enregistre l’ordre choisi, pour l’organisateur seulement', async () => {
+      const id = await tournament();
+      await enter(id, player).expect(201);
+      await enter(id, captain).expect(201);
+      const list = async () =>
+        (await http().get(`/me/tournaments/${id}/registrations`).set(bearer(organizer)).expect(200))
+          .body as TournamentRegistration[];
+      const [first, second] = await list();
+      const participantIds = [second?.participantId, first?.participantId];
+
+      const seed = (as: Account, ids: unknown[]) =>
+        http().put(`/tournaments/${id}/seeds`).set(bearer(as)).send({ participantIds: ids });
+      await seed(player, participantIds).expect(403);
+      await seed(organizer, ['00000000-0000-4000-8000-000000000000']).expect(404);
+      await seed(organizer, participantIds).expect(204);
+
+      const [reloadedFirst, reloadedSecond] = await list();
+      expect(reloadedFirst?.seed).toBe(2);
+      expect(reloadedSecond?.seed).toBe(1);
+    });
+  });
+
+  describe('titulaires et remplaçants', () => {
+    it('compte les titulaires pour le minimum et tout l’effectif pour le maximum', async () => {
+      const { id: teamId, ...created } = await team(captain, player, otherCaptain);
+      const role = (memberId: string, value: string, as = captain) =>
+        http().patch(`/teams/${teamId}/members/${memberId}`).set(bearer(as)).send({ role: value });
+      await role(otherCaptain.id, 'SUBSTITUTE', player).expect(403);
+      await role(organizer.id, 'SUBSTITUTE').expect(404);
+      await role(otherCaptain.id, 'SUBSTITUTE').expect(204);
+      await role(player.id, 'SUBSTITUTE').expect(204);
+
+      const id = await teamTournament({ teamSizeMin: 2, teamSizeMax: 3 });
+      expect(message(await enter(id, captain, { teamId }).expect(409))).toMatch(/2 titulaires/);
+
+      await role(player.id, 'STARTER').expect(204);
+      await enter(id, captain, { teamId }).expect(201);
+      const tooSmall = await teamTournament({ teamSizeMin: 2, teamSizeMax: 2 });
+      expect(message(await enter(tooSmall, captain, { teamId }).expect(409))).toMatch(/limite/);
+      expect(created.name).toContain(run);
+    });
+  });
+
+  describe('accès par le lien', () => {
+    const bySlug = (slug: string) => http().get(`/tournaments/${slug}`);
+    const slugOf = async (id: string) =>
+      (await prisma.tournament.findUniqueOrThrow({ where: { id } })).slug;
+
+    it('ouvre un tournoi sur invitation, et son inscription', async () => {
+      const id = await tournament({ visibility: 'UNLISTED' });
+      const res = await bySlug(await slugOf(id)).expect(200);
+      expect((res.body as TournamentDetail).id).toBe(id);
+      await enter(id, player).expect(201);
+    });
+
+    it('cache les brouillons et les tournois privés', async () => {
+      await bySlug(await slugOf(await tournament({}, false))).expect(404);
+      await bySlug(await slugOf(await tournament({ visibility: 'PRIVATE' }))).expect(404);
     });
   });
 });

@@ -39,6 +39,13 @@ export class TournamentsController {
     return this.tournaments.listPublic(query);
   }
 
+  /** Tournoi publié accessible par son lien, répertorié ou non. */
+  @Public()
+  @Get(':slug')
+  findBySlug(@Param('slug') slug: string): Promise<TournamentSummary> {
+    return this.tournaments.findBySlug(slug);
+  }
+
   /** Création rapide : nom, début et fin. Le reste se règle ensuite avec PUT /tournaments/:id. */
   @Post()
   create(
@@ -56,6 +63,14 @@ export class TournamentsController {
     @Body({ schema: tournamentSettingsSchema }) body: TournamentSettingsInput,
   ): Promise<TournamentDetail> {
     return this.tournaments.update(user.id, id, body);
+  }
+
+  @Post(':id/duplicate')
+  duplicate(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<TournamentDetail> {
+    return this.tournaments.duplicate(user.id, id);
   }
 
   @Post(':id/publish')

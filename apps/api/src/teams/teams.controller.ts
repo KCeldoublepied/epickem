@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiCookieAuth, ApiTags } from '@nestjs/swagger';
@@ -15,6 +16,8 @@ import {
   createTeamSchema,
   type TeamDetail,
   type TeamInvitation,
+  type TeamMemberRoleInput,
+  teamMemberRoleSchema,
 } from '@epickem/shared';
 import type { AuthUser } from '../auth/auth-user';
 import { CurrentUser, Public } from '../auth/auth.decorators';
@@ -60,6 +63,17 @@ export class TeamsController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<TeamDetail> {
     return this.teams.renewInvite(user.id, id);
+  }
+
+  @Patch('teams/:id/members/:userId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  setRole(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Body({ schema: teamMemberRoleSchema }) body: TeamMemberRoleInput,
+  ): Promise<void> {
+    return this.teams.setRole(user.id, id, userId, body.role);
   }
 
   @Delete('teams/:id/members/:userId')

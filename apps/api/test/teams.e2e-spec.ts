@@ -9,7 +9,8 @@ import { PrismaService } from '../src/prisma/prisma.service';
 
 // Tests sur une vraie base PostgreSQL : les comptes et équipes créés ici sont supprimés à la fin.
 const DOMAIN = 'teams.e2e.test';
-const run = Date.now().toString(36);
+// Le préfixe évite les pseudos identiques avec les autres fichiers de tests, lancés en parallèle.
+const run = `t${Date.now().toString(36)}`;
 
 interface Account {
   id: string;

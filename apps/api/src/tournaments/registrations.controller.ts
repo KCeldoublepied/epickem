@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiCookieAuth, ApiTags } from '@nestjs/swagger';
 import {
@@ -17,6 +18,8 @@ import {
   tournamentEntrySchema,
   type ReviewRegistrationInput,
   reviewRegistrationSchema,
+  type SeedsInput,
+  seedsSchema,
   type TournamentRegistration,
 } from '@epickem/shared';
 import type { AuthUser } from '../auth/auth-user';
@@ -61,6 +64,36 @@ export class RegistrationsController {
     @Param('registrationId', ParseUUIDPipe) registrationId: string,
   ): Promise<void> {
     return this.registrations.cancel(user.id, id, registrationId);
+  }
+
+  @Post('tournaments/:id/registrations/:registrationId/check-in')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  checkIn(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('registrationId', ParseUUIDPipe) registrationId: string,
+  ): Promise<void> {
+    return this.registrations.checkIn(user.id, id, registrationId);
+  }
+
+  /** Clôt le check-in : les absents sont remplacés par la liste d'attente. */
+  @Post('tournaments/:id/check-in/close')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  closeCheckIn(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<void> {
+    return this.registrations.closeCheckIn(user.id, id);
+  }
+
+  @Put('tournaments/:id/seeds')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  setSeeds(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body({ schema: seedsSchema }) body: SeedsInput,
+  ): Promise<void> {
+    return this.registrations.setSeeds(user.id, id, body);
   }
 
   /** Accepte ou refuse une inscription en attente. */

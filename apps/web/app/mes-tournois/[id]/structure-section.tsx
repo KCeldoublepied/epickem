@@ -81,17 +81,15 @@ export function StructureSection({
     // La phase qui était la dernière doit maintenant désigner ses qualifiés.
     const last = stages.at(-1);
     const lastEntrants = entrants.at(-1);
-    const previous = stages.map((candidate) =>
-      candidate === last && lastEntrants !== undefined && lastEntrants >= 4
-        ? ({
-            ...candidate,
-            settings: {
-              ...candidate.settings,
-              qualifiers: candidate.settings.qualifiers ?? Math.floor(lastEntrants / 2),
-            },
-          } as StageDraft)
-        : candidate,
-    );
+    const previous = stages.map((candidate) => {
+      if (candidate !== last || lastEntrants === undefined || lastEntrants < 4) return candidate;
+      const groups = candidate.format === 'ROUND_ROBIN' ? (candidate.settings.groupCount ?? 1) : 1;
+      const half = Math.max(1, Math.floor(lastEntrants / 2 / groups)) * groups;
+      return {
+        ...candidate,
+        settings: { ...candidate.settings, qualifiers: candidate.settings.qualifiers ?? half },
+      } as StageDraft;
+    });
     reorganize([...previous, added]);
   }
 
@@ -228,17 +226,21 @@ function StageEditor({
     />
   );
 
-  const finalBestOf = (
+  const roundBestOf = (key: string, label: string) => (
     <SelectField
-      path={`${path}.settings.finalBestOf`}
-      label="Format de la finale"
-      value={settings.finalBestOf === undefined ? undefined : String(settings.finalBestOf)}
-      onChange={(value) => set('finalBestOf', value === undefined ? undefined : Number(value))}
+      path={`${path}.settings.${key}`}
+      label={label}
+      value={settings[key] === undefined ? undefined : String(settings[key])}
+      onChange={(value) => set(key, value === undefined ? undefined : Number(value))}
       errors={errors}
       emptyLabel="Comme les autres matchs"
       options={BEST_OF_OPTIONS}
     />
   );
+  const finalBestOf = roundBestOf('finalBestOf', 'Format de la finale');
+
+  const groups = (settings.groupCount as number | undefined) ?? 1;
+  const qualifiers = settings.qualifiers as number | undefined;
 
   const tieBreaker = (
     <SelectField
@@ -314,6 +316,8 @@ function StageEditor({
       {stage.format === 'SINGLE_ELIMINATION' && (
         <>
           {bestOf}
+          {roundBestOf('quarterFinalBestOf', 'Format des quarts de finale')}
+          {roundBestOf('semiFinalBestOf', 'Format des demi-finales')}
           {finalBestOf}
           <CheckboxField
             path={`${path}.settings.thirdPlaceMatch`}
@@ -341,7 +345,26 @@ function StageEditor({
       {stage.format === 'ROUND_ROBIN' && (
         <>
           {bestOf}
-          {number('groupCount', 'Nombre de poules', 1, 64)}
+          <NumberField
+            path={`${path}.settings.groupCount`}
+            label="Nombre de poules"
+            value={settings.groupCount as number | undefined}
+            onChange={(value) =>
+              // Le nombre de qualifiés par poule reste le même.
+              onChange({
+                ...stage,
+                settings: {
+                  ...settings,
+                  groupCount: value,
+                  qualifiers:
+                    value && qualifiers !== undefined ? (qualifiers / groups) * value : qualifiers,
+                },
+              } as StageDraft)
+            }
+            errors={errors}
+            min={1}
+            max={64}
+          />
           {number('legs', 'Rencontres par paire', 1, 4, '1 pour un aller, 2 pour un aller-retour.')}
           {tieBreaker}
           {number('pointsWin', 'Points pour une victoire', 0, 100)}
@@ -385,14 +408,20 @@ function StageEditor({
         errors={errors}
         options={SEEDING_OPTIONS}
       />
+      {!isLast && stage.format === 'ROUND_ROBIN' && (
+        <NumberField
+          path={`${path}.settings.qualifiers`}
+          label="Qualifiés par poule"
+          hint={qualifiers === undefined ? undefined : `Soit ${qualifiers} qualifiés au total.`}
+          value={qualifiers === undefined ? undefined : qualifiers / groups}
+          onChange={(value) => set('qualifiers', value === undefined ? undefined : value * groups)}
+          errors={errors}
+          min={1}
+        />
+      )}
       {!isLast &&
-        number(
-          'qualifiers',
-          'Qualifiés pour la phase suivante',
-          2,
-          4096,
-          stage.format === 'ROUND_ROBIN' ? 'Total, toutes poules confondues.' : undefined,
-        )}
+        stage.format !== 'ROUND_ROBIN' &&
+        number('qualifiers', 'Qualifiés pour la phase suivante', 2, 4096)}
       <DateField
         path={`${path}.startsAt`}
         label="Début de la phase"

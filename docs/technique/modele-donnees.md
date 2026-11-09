@@ -85,9 +85,9 @@ cohérence des arbres relèvent du moteur de tournois ([ADR-0008](../adr/0008-mo
 
 **Les réglages d'un jeu sont décrits par un catalogue.** `GAME_CATALOG` (`packages/shared/src/game-catalog.ts`) liste, pour
 chaque `Game.slug`, les champs de `Tournament.gameSettings` (région, cartes, type de sélection…), les formats d'étape
-jouables et les compositions d'équipe. Le dashboard en déduit son formulaire et l'API sa validation. Ajouter un jeu revient à
-ajouter une entrée au catalogue, une migration qui l'insère dans `games` et ses statistiques au seed. Les réglages, eux,
-évoluent sans migration.
+jouables et les compositions d'équipe. Le dashboard en déduit son formulaire et l'API sa validation. Ajouter un jeu au
+catalogue revient à ajouter son entrée, une migration qui l'insère dans `games` et ses statistiques au seed. Un organisateur
+peut aussi déclarer un jeu et ses statistiques depuis le site : ce jeu n'a pas de réglages propres et accepte tous les formats.
 
 **Les classements sont calculés, pas stockés.** Chaque point gagné est une ligne de `PointsEntry`. Le classement d'un tournoi,
 d'une saison ou le classement général est la somme des entrées actives (`supersededAt` vide). Lors d'un recalcul en cascade,

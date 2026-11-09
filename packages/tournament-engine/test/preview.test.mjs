@@ -58,6 +58,24 @@ describe('élimination simple', () => {
   });
 });
 
+describe('format selon le tour', () => {
+  it('applique les formats des derniers tours', () => {
+    const preview = stagePreview(
+      stage('SINGLE_ELIMINATION', {
+        bestOf: 1,
+        quarterFinalBestOf: 3,
+        semiFinalBestOf: 5,
+        finalBestOf: 7,
+      }),
+      16,
+    );
+    assert.deepEqual(
+      preview.steps.map((step) => step.bestOf),
+      [1, 3, 5, 7],
+    );
+  });
+});
+
 describe('élimination double', () => {
   it('compte les deux tableaux et la grande finale rejouable', () => {
     const preview = stagePreview(stage('DOUBLE_ELIMINATION'), 8);
