@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import {
   GAME_CATALOG,
   type GameSettingField,
@@ -78,6 +79,9 @@ export function GameSection({ draft, update, errors, games }: SectionProps) {
           hint={games ? undefined : 'Impossible de charger la liste des jeux.'}
           wide
         />
+        <p className={styles.hint} style={{ gridColumn: '1 / -1' }}>
+          Votre jeu n&apos;est pas dans la liste ? <Link href="/jeux/nouveau">Déclarez-le</Link>.
+        </p>
       </fieldset>
 
       <fieldset className={styles.section}>

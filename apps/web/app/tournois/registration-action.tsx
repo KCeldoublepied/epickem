@@ -52,16 +52,26 @@ export function useRegistrationContext() {
   return { context, reload };
 }
 
+function isCheckInOpen({ checkInOpensAt, startsAt }: TournamentSummary): boolean {
+  const now = Date.now();
+  return (
+    checkInOpensAt !== null &&
+    Date.parse(checkInOpensAt) <= now &&
+    (startsAt === null || now < Date.parse(startsAt))
+  );
+}
+
 interface RegistrationActionProps {
   tournament: TournamentSummary;
   context: Context;
-  /** Appelé après une inscription ou une annulation. */
+  /** Appelé après une inscription, une annulation ou un check-in. */
   onChange: () => Promise<unknown>;
 }
 
 /** Inscription à un tournoi depuis sa carte : le joueur, ou l'une des équipes qu'il dirige. */
 export function RegistrationAction({ tournament, context, onChange }: RegistrationActionProps) {
   const [teamId, setTeamId] = useState<string | undefined>();
+  const [values, setValues] = useState<Record<string, string>>({});
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const path = `/tournaments/${tournament.id}/registrations`;
@@ -73,7 +83,11 @@ export function RegistrationAction({ tournament, context, onChange }: Registrati
       await action();
       await onChange();
     } catch (cause) {
-      setError(cause instanceof ApiRequestError ? cause.message : NETWORK_ERROR);
+      setError(
+        cause instanceof ApiRequestError
+          ? (cause.body?.issues?.[0]?.message ?? cause.message)
+          : NETWORK_ERROR,
+      );
     } finally {
       setPending(false);
     }
@@ -100,8 +114,22 @@ export function RegistrationAction({ tournament, context, onChange }: Registrati
         <>
           <span className={styles.tag}>
             {REGISTRATION_STATUS_LABELS[mine.status]}
+            {mine.waitlistPosition !== null && ` (n° ${mine.waitlistPosition})`}
             {mine.team && ` · ${mine.team.name}`}
+            {mine.checkedIn && ' · présent'}
           </span>
+          {mine.canCancel && isOpen && !mine.checkedIn && isCheckInOpen(tournament) && (
+            <button
+              type="button"
+              className={styles.primary}
+              disabled={pending || mine.status === 'PENDING'}
+              onClick={() =>
+                void run(() => apiFetch<void>(`${path}/${mine.id}/check-in`, { method: 'POST' }))
+              }
+            >
+              Faire mon check-in<span className={styles.srOnly}> pour {tournament.name}</span>
+            </button>
+          )}
           {mine.canCancel && isOpen && (
             <button
               type="button"
@@ -135,6 +163,28 @@ export function RegistrationAction({ tournament, context, onChange }: Registrati
               ))}
             </select>
           )}
+          {tournament.customFields.map(({ label, required, options }) => {
+            const props = {
+              className: formStyles.input,
+              'aria-label': `${label} (${tournament.name})`,
+              value: values[label] ?? '',
+              onChange: (event: { target: { value: string } }) =>
+                setValues({ ...values, [label]: event.target.value }),
+            };
+            const title = required ? `${label} (obligatoire)` : label;
+            return options.length > 0 ? (
+              <select key={label} {...props}>
+                <option value="">{title}</option>
+                {options.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input key={label} {...props} placeholder={title} maxLength={200} />
+            );
+          })}
           <button
             type="button"
             className={styles.primary}
@@ -143,7 +193,10 @@ export function RegistrationAction({ tournament, context, onChange }: Registrati
               void run(() =>
                 apiFetch<MyRegistration>(path, {
                   method: 'POST',
-                  body: JSON.stringify(isTeam ? { teamId: selectedTeam } : {}),
+                  body: JSON.stringify({
+                    ...(isTeam && { teamId: selectedTeam }),
+                    customFieldValues: values,
+                  }),
                 }),
               )
             }

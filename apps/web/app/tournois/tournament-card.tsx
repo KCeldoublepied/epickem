@@ -14,7 +14,7 @@ export const STATUS_LABELS: Record<TournamentStatus, string> = {
 
 const VISIBILITY_LABELS: Record<Visibility, string | null> = {
   PUBLIC: null,
-  UNLISTED: 'Non répertorié',
+  UNLISTED: 'Sur invitation',
   PRIVATE: 'Privé',
 };
 

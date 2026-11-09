@@ -33,13 +33,14 @@ export const STAGE_STATUSES = ['PENDING', 'IN_PROGRESS', 'COMPLETED'] as const;
 export type StageStatus = (typeof STAGE_STATUSES)[number];
 
 /** Façon de placer les participants au début d'une phase. */
-export const SEEDINGS = ['RANDOM', 'MANUAL', 'PREVIOUS_STANDINGS'] as const;
+export const SEEDINGS = ['RANDOM', 'MANUAL', 'PREVIOUS_STANDINGS', 'CROSS_GROUPS'] as const;
 export type Seeding = (typeof SEEDINGS)[number];
 
 export const SEEDING_LABELS: Record<Seeding, string> = {
   RANDOM: 'Tirage au sort',
   MANUAL: "Choix de l'organisateur",
   PREVIOUS_STANDINGS: 'Classement de la phase précédente',
+  CROSS_GROUPS: 'Croisé entre poules (1er de A contre 2e de B)',
 };
 
 export const TIE_BREAKERS = ['HEAD_TO_HEAD', 'SCORE_DIFFERENCE', 'BUCHHOLZ'] as const;
@@ -89,7 +90,9 @@ export const stageInputSchema = z.discriminatedUnion('format', [
     format: z.literal('SINGLE_ELIMINATION'),
     settings: z.object({
       ...duelSettings,
-      /** Format de la finale, s'il diffère du reste de la phase. */
+      /** Formats des derniers tours, s'ils diffèrent du reste de la phase. */
+      quarterFinalBestOf: bestOf.optional(),
+      semiFinalBestOf: bestOf.optional(),
       finalBestOf: bestOf.optional(),
       thirdPlaceMatch: z.boolean().default(false),
     }),
@@ -219,14 +222,20 @@ export function stageStructureIssues(
     if (index === 0 && settings.seeding === 'PREVIOUS_STANDINGS') {
       add('seeding', "La première phase n'a pas de phase précédente.");
     }
+    if (settings.seeding === 'CROSS_GROUPS') {
+      const previous = stages[index - 1];
+      if (previous?.format !== 'ROUND_ROBIN' || (previous.settings.groupCount ?? 1) < 2) {
+        add('seeding', 'La phase précédente doit compter au moins deux poules.');
+      }
+    }
 
     if (stage.format === 'ROUND_ROBIN') {
       const groups = stage.settings.groupCount ?? 1;
       if (total !== undefined && groups * 2 > total) {
         add('groupCount', `Au plus ${Math.floor(total / 2)} poule(s) pour ${total} participants.`);
       }
-      if (settings.qualifiers !== undefined && settings.qualifiers < groups) {
-        add('qualifiers', 'Au moins un qualifié par poule.');
+      if (settings.qualifiers !== undefined && settings.qualifiers % groups !== 0) {
+        add('qualifiers', 'Chaque poule doit qualifier le même nombre de participants.');
       }
     }
     if (stage.format === 'SWISS') {

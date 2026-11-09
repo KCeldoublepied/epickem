@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { CreateTeamInput, TeamDetail, TeamInvitation } from '@epickem/shared';
+import type { CreateTeamInput, TeamDetail, TeamInvitation, TeamRole } from '@epickem/shared';
 import { isUniqueViolation } from '../auth/auth.service';
 import type { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -17,7 +17,7 @@ const TEAM_SELECT = {
   captainId: true,
   inviteCode: true,
   members: {
-    select: { user: { select: { id: true, username: true, displayName: true } } },
+    select: { role: true, user: { select: { id: true, username: true, displayName: true } } },
     orderBy: { joinedAt: 'asc' },
   },
 } satisfies Prisma.TeamSelect;
@@ -102,6 +102,17 @@ export class TeamsService {
     return toTeamDetail(row, userId);
   }
 
+  /** Le chef d'équipe désigne les titulaires et les remplaçants. */
+  async setRole(userId: string, teamId: string, memberId: string, role: TeamRole): Promise<void> {
+    const { captainId } = await this.findTeam(teamId);
+    if (captainId !== userId) throw new ForbiddenException("Réservé au chef d'équipe");
+    const { count } = await this.prisma.teamMember.updateMany({
+      where: { teamId, userId: memberId },
+      data: { role },
+    });
+    if (count === 0) throw new NotFoundException('Ce compte ne fait pas partie de cette équipe');
+  }
+
   /** Le chef d'équipe retire un membre, ou un membre quitte l'équipe. */
   async removeMember(userId: string, teamId: string, memberId: string): Promise<void> {
     const { captainId } = await this.findTeam(teamId);
@@ -138,7 +149,7 @@ const invitationNotFound = () => new NotFoundException('Cette invitation n’est
 function toTeamDetail({ members, inviteCode, ...team }: TeamRow, userId: string): TeamDetail {
   return {
     ...team,
-    members: members.map(({ user }) => user),
+    members: members.map(({ user, role }) => ({ ...user, role })),
     inviteCode: team.captainId === userId ? inviteCode : null,
   };
 }

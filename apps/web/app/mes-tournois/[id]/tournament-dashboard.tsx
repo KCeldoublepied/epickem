@@ -35,6 +35,7 @@ import {
   toPayload,
   validate,
 } from './draft';
+import { CustomFieldsEditor } from './custom-fields-editor';
 import { GameSection, teamPatch } from './game-section';
 import { RegistrationsSection } from './registrations-section';
 import { StructureFlow } from './structure-flow';
@@ -346,6 +347,11 @@ function Dashboard({ initial, games, justCreated }: DashboardProps) {
                 draft={draft}
                 games={games}
                 missing={status === 'DRAFT' ? missing : null}
+                publicLink={
+                  status !== 'DRAFT' && tournament.visibility !== 'PRIVATE'
+                    ? `${window.location.origin}/tournois/voir/${tournament.slug}`
+                    : null
+                }
                 goTo={goTo}
               />
             )}
@@ -356,6 +362,8 @@ function Dashboard({ initial, games, justCreated }: DashboardProps) {
               <RegistrationsSection
                 tournamentId={tournament.id}
                 maxParticipants={draft.maxParticipants}
+                checkInOpensAt={draft.checkInOpensAt}
+                manualSeeding={draft.stages[0]?.settings.seeding === 'MANUAL'}
               />
             )}
             {section === 'structure' && (
@@ -387,12 +395,15 @@ function Overview({
   draft,
   games,
   missing,
+  publicLink,
   goTo,
 }: {
   draft: Draft;
   games: GameSummary[] | null;
   /** Ce qu'il manque pour publier ; null si le tournoi n'est plus un brouillon. */
   missing: { path: string; message: string }[] | null;
+  /** Lien à partager, une fois le tournoi publié. */
+  publicLink: string | null;
   goTo: (section: SectionId, path?: string) => void;
 }) {
   const game = games?.find((candidate) => candidate.id === draft.gameId);
@@ -424,6 +435,15 @@ function Overview({
               ))}
             </ul>
           )}
+        </section>
+      )}
+
+      {publicLink && (
+        <section className={styles.panel} aria-labelledby="lien-titre">
+          <h2 id="lien-titre">Lien du tournoi</h2>
+          <p>
+            Partagez ce lien pour inviter des participants : <a href={publicLink}>{publicLink}</a>
+          </p>
         </section>
       )}
 
@@ -481,10 +501,10 @@ function GeneralSection({ draft, update, errors }: SectionProps) {
           value={draft.visibility ?? 'PUBLIC'}
           onChange={(value) => update({ visibility: value as Draft['visibility'] })}
           errors={errors}
-          hint="Un tournoi non répertorié n'est accessible que par son lien."
+          hint="Un tournoi sur invitation n'est pas listé : on y accède par son lien."
           options={[
             ['PUBLIC', 'Public'],
-            ['UNLISTED', 'Non répertorié'],
+            ['UNLISTED', 'Sur invitation'],
             ['PRIVATE', 'Privé'],
           ]}
           wide
@@ -591,7 +611,7 @@ function ParticipantsSection({ draft, update, errors, games }: SectionProps) {
           <>
             <NumberField
               path="teamSizeMin"
-              label="Joueurs par équipe (minimum)"
+              label="Titulaires par équipe (minimum)"
               value={draft.teamSizeMin}
               onChange={(teamSizeMin) => update({ teamSizeMin })}
               errors={errors}
@@ -615,8 +635,8 @@ function ParticipantsSection({ draft, update, errors, games }: SectionProps) {
           label={isTeam ? "Nombre d'équipes" : "Nombre d'inscrits"}
           hint={
             playerCount
-              ? `Soit jusqu'à ${playerCount} joueurs. Laissez vide pour ne pas limiter.`
-              : `Maximum de ${participantUnit(draft)} ; laissez vide pour ne pas limiter.`
+              ? `Soit jusqu'à ${playerCount} joueurs. Une fois complet, les suivants vont en liste d'attente.`
+              : `Maximum de ${participantUnit(draft)}, puis liste d'attente ; laissez vide pour ne pas limiter.`
           }
           value={draft.maxParticipants}
           onChange={(maxParticipants) => update({ maxParticipants })}
@@ -627,6 +647,12 @@ function ParticipantsSection({ draft, update, errors, games }: SectionProps) {
           wide
         />
       </fieldset>
+
+      <CustomFieldsEditor
+        fields={draft.customFields ?? []}
+        onChange={(customFields) => update({ customFields })}
+        errors={errors}
+      />
 
       <fieldset className={`${formStyles.section} ${formStyles.sectionThree}`}>
         <legend>Inscriptions</legend>

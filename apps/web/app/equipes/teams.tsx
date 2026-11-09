@@ -2,7 +2,12 @@
 
 import Link from 'next/link';
 import { type FormEvent, useEffect, useState } from 'react';
-import { createTeamSchema, type TeamDetail, type UserProfile } from '@epickem/shared';
+import {
+  createTeamSchema,
+  type TeamDetail,
+  type TeamMemberSummary,
+  type UserProfile,
+} from '@epickem/shared';
 
 import { ApiRequestError, apiFetch, NETWORK_ERROR } from '../api-client';
 import { Field, type FieldErrors, fieldId, firstErrors, TextField } from '../tournois/form-fields';
@@ -178,6 +183,14 @@ function TeamCard({
   const removeMember = (memberId: string) =>
     run(() => apiFetch<void>(`/teams/${team.id}/members/${memberId}`, { method: 'DELETE' }));
 
+  const toggleRole = ({ id, role }: TeamMemberSummary) =>
+    run(() =>
+      apiFetch<void>(`/teams/${team.id}/members/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ role: role === 'STARTER' ? 'SUBSTITUTE' : 'STARTER' }),
+      }),
+    );
+
   async function copyLink(value: string) {
     try {
       await navigator.clipboard.writeText(value);
@@ -207,16 +220,33 @@ function TeamCard({
               {member.id === team.captainId && (
                 <span className={teamStyles.muted}> · chef d&apos;équipe</span>
               )}
+              <span className={teamStyles.muted}>
+                {' '}
+                · {member.role === 'STARTER' ? 'titulaire' : 'remplaçant'}
+              </span>
             </span>
-            {isCaptain && member.id !== userId && (
-              <button
-                type="button"
-                className={teamStyles.small}
-                disabled={pending}
-                onClick={() => void removeMember(member.id)}
-              >
-                Retirer<span className={styles.srOnly}> {member.displayName}</span>
-              </button>
+            {isCaptain && (
+              <span className={teamStyles.memberActions}>
+                <button
+                  type="button"
+                  className={teamStyles.small}
+                  disabled={pending}
+                  onClick={() => void toggleRole(member)}
+                >
+                  {member.role === 'STARTER' ? 'Remplaçant' : 'Titulaire'}
+                  <span className={styles.srOnly}> : {member.displayName}</span>
+                </button>
+                {member.id !== userId && (
+                  <button
+                    type="button"
+                    className={teamStyles.small}
+                    disabled={pending}
+                    onClick={() => void removeMember(member.id)}
+                  >
+                    Retirer<span className={styles.srOnly}> {member.displayName}</span>
+                  </button>
+                )}
+              </span>
             )}
           </li>
         ))}

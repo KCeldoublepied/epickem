@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
+  createGameSchema,
   createTournamentSchema,
+  customFieldIssues,
   defaultStage,
   GAME_CATALOG,
   gameStructureIssues,
@@ -89,6 +91,20 @@ describe('phases', () => {
     assert.deepEqual(issuePaths(result), ['stages.0.settings.bestOf']);
   });
 
+  it('qualifie le même nombre de participants dans chaque poule', () => {
+    const result = settings({ maxParticipants: 16, stages: [groups(5), bracket] });
+    assert.deepEqual(issuePaths(result), ['stages.0.settings.qualifiers']);
+  });
+
+  it('réserve le placement croisé à la suite de plusieurs poules', () => {
+    const crossed = { ...bracket, settings: { ...bracket.settings, seeding: 'CROSS_GROUPS' } };
+    assert.equal(settings({ stages: [groups(4), crossed] }).success, true);
+    assert.deepEqual(issuePaths(settings({ stages: [groups(4, 1), crossed] })), [
+      'stages.1.settings.seeding',
+    ]);
+    assert.deepEqual(issuePaths(settings({ stages: [crossed] })), ['stages.0.settings.seeding']);
+  });
+
   it('réserve le Buchholz à la ronde suisse', () => {
     const tieBreaker = (format) => ({
       name: 'Phase',
@@ -120,6 +136,57 @@ describe('phases', () => {
   it('refuse le classement précédent sur la première phase', () => {
     const stage = { ...bracket, settings: { ...bracket.settings, seeding: 'PREVIOUS_STANDINGS' } };
     assert.deepEqual(issuePaths(settings({ stages: [stage] })), ['stages.0.settings.seeding']);
+  });
+});
+
+describe('champs personnalisés', () => {
+  const pseudo = { label: 'Pseudo', required: true, options: [] };
+  const rank = { label: 'Rang', required: false, options: ['Or', 'Argent'] };
+  const paths = (values) =>
+    customFieldIssues([pseudo, rank], values).map((issue) => issue.path.join('.'));
+
+  it('exige les réponses obligatoires', () => {
+    assert.deepEqual(paths({ Pseudo: '   ' }), ['customFieldValues.Pseudo']);
+    assert.deepEqual(paths({ Pseudo: 'Faker' }), []);
+  });
+
+  it('limite une réponse à la liste proposée', () => {
+    assert.deepEqual(paths({ Pseudo: 'Faker', Rang: 'Bronze' }), ['customFieldValues.Rang']);
+    assert.deepEqual(paths({ Pseudo: 'Faker', Rang: 'Or' }), []);
+  });
+
+  it('refuse deux champs de même nom', () => {
+    assert.deepEqual(issuePaths(settings({ customFields: [pseudo, pseudo] })), [
+      'customFields.1.label',
+    ]);
+  });
+});
+
+describe('déclaration d’un jeu', () => {
+  const issues = (input) => issuePaths(createGameSchema.safeParse(input));
+
+  it('accepte un jeu et ses statistiques', () => {
+    const parsed = createGameSchema.parse({
+      name: 'Babyfoot',
+      stats: [{ label: 'Buts', type: 'NUMBER' }],
+    });
+    assert.equal(parsed.stats[0].scope, 'PARTICIPANT');
+  });
+
+  it('exige des valeurs pour une statistique à choix et refuse les doublons', () => {
+    assert.deepEqual(issues({ name: 'Échecs', stats: [{ label: 'Ouverture', type: 'CHOICE' }] }), [
+      'stats.0.options',
+    ]);
+    assert.deepEqual(
+      issues({
+        name: 'Échecs',
+        stats: [
+          { label: 'Coups', type: 'NUMBER' },
+          { label: 'Coups', type: 'NUMBER' },
+        ],
+      }),
+      ['stats.1.label'],
+    );
   });
 });
 

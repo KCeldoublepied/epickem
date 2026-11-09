@@ -428,6 +428,88 @@ describe('tournois', () => {
     });
   });
 
+  describe('duplication', () => {
+    it('crée un brouillon aux mêmes réglages, sans dates ni inscrits', async () => {
+      const groups = defaultStage('ROUND_ROBIN', 'Poules');
+      const source = await ready(`Récurrent ${run}`, {
+        maxParticipants: 8,
+        customFields: [{ label: 'Rang', required: true }],
+        stages: [
+          {
+            ...groups,
+            startsAt: '2026-12-01T18:00:00Z',
+            settings: { ...groups.settings, qualifiers: 4 },
+          },
+          defaultStage('SINGLE_ELIMINATION', 'Arbre'),
+        ],
+      });
+      await publish(source.id).expect(200);
+
+      const res = await http()
+        .post(`/tournaments/${source.id}/duplicate`)
+        .set(bearer(token))
+        .expect(201);
+      const copy = res.body as TournamentDetail;
+      expect(copy).toMatchObject({
+        name: `Récurrent ${run} (copie)`,
+        status: 'DRAFT',
+        startsAt: null,
+        endsAt: null,
+        maxParticipants: 8,
+        game: { id: gameId },
+        customFields: [{ label: 'Rang', required: true, options: [] }],
+      });
+      expect(copy.id).not.toBe(source.id);
+      expect(copy.stages.map(({ name, startsAt }) => [name, startsAt])).toEqual([
+        ['Poules', null],
+        ['Arbre', null],
+      ]);
+      expect(copy.stages[0]?.settings.qualifiers).toBe(4);
+    });
+
+    it('est réservée à l’organisateur', async () => {
+      const { id } = await ready(`Pas à moi ${run}`);
+      await http().post(`/tournaments/${id}/duplicate`).set(bearer(otherToken)).expect(403);
+    });
+  });
+
+  describe('déclaration d’un jeu', () => {
+    const name = `Babyfoot ${run}`;
+    const declare = (body: object, as?: string) => {
+      const req = http().post('/games').send(body);
+      return as ? req.set(bearer(as)) : req;
+    };
+
+    afterAll(async () => {
+      await prisma.game.deleteMany({ where: { name } });
+    });
+
+    it('crée le jeu et ses statistiques, pour un compte connecté', async () => {
+      const stats = [
+        { label: 'Buts marqués', type: 'NUMBER' },
+        { label: 'Terrain', type: 'CHOICE', scope: 'MATCH_GAME', options: ['Bar', 'Salle'] },
+      ];
+      await declare({ name, stats }).expect(401);
+      const res = await declare({ name, stats }, token).expect(201);
+      const { id } = res.body as { id: string };
+
+      const rows = await prisma.gameStat.findMany({
+        where: { gameId: id },
+        orderBy: { key: 'asc' },
+      });
+      expect(rows).toMatchObject([
+        { key: 'buts-marques', type: 'NUMBER', scope: 'PARTICIPANT' },
+        { key: 'terrain', type: 'CHOICE', options: ['Bar', 'Salle'] },
+      ]);
+      const games = await http().get('/games').expect(200);
+      expect((games.body as { id: string }[]).map((game) => game.id)).toContain(id);
+    });
+
+    it('refuse un jeu déjà déclaré', async () => {
+      await declare({ name }, token).expect(409);
+    });
+  });
+
   describe('publication et listes', () => {
     it('refuse de publier un tournoi incomplet et dit ce qui manque', async () => {
       const { id } = (await create({ name: `Incomplet ${run}` }).expect(201))

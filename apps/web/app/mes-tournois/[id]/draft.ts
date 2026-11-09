@@ -50,6 +50,7 @@ const PARTICIPANT_FIELDS = [
   'registrationOpensAt',
   'registrationClosesAt',
   'checkInOpensAt',
+  'customFields',
 ];
 
 /** Section du dashboard où se trouve un champ. */
@@ -90,6 +91,7 @@ export function toDraft(tournament: TournamentDetail): Draft {
     registrationOpensAt: optionalDate(tournament.registrationOpensAt),
     registrationClosesAt: optionalDate(tournament.registrationClosesAt),
     checkInOpensAt: optionalDate(tournament.checkInOpensAt),
+    customFields: tournament.customFields,
     stages: tournament.stages.map(
       ({ id, name, format, settings, startsAt }) =>
         ({ key: id, name, format, settings, startsAt: optionalDate(startsAt) }) as StageDraft,
@@ -111,6 +113,10 @@ export function toPayload(draft: Draft): unknown {
     registrationOpensAt: localToIso(draft.registrationOpensAt),
     registrationClosesAt: localToIso(draft.registrationClosesAt),
     checkInOpensAt: localToIso(draft.checkInOpensAt),
+    customFields: draft.customFields?.map((field) => ({
+      ...field,
+      options: field.options?.filter((option) => option.trim()),
+    })),
     stages: draft.stages.map(({ key: _key, startsAt, ...stage }, index) => ({
       ...stage,
       startsAt: localToIso(startsAt),

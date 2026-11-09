@@ -10,10 +10,17 @@ export const createTeamSchema = z.object({
 });
 export type CreateTeamInput = z.infer<typeof createTeamSchema>;
 
+export const TEAM_ROLES = ['STARTER', 'SUBSTITUTE'] as const;
+export type TeamRole = (typeof TEAM_ROLES)[number];
+
+export const teamMemberRoleSchema = z.object({ role: z.enum(TEAM_ROLES) });
+export type TeamMemberRoleInput = z.infer<typeof teamMemberRoleSchema>;
+
 export interface TeamMemberSummary {
   id: string;
   username: string;
   displayName: string;
+  role: TeamRole;
 }
 
 /** Équipe telle que l'API la renvoie à l'un de ses membres. */
