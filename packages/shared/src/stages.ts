@@ -60,6 +60,28 @@ export const TIE_BREAKER_LABELS: Record<TieBreaker, string> = {
 
 export const BEST_OF_VALUES = [1, 3, 5, 7] as const;
 
+/** Format des matchs d'une phase tant que l'organisateur ne le change pas. */
+export const DEFAULT_BEST_OF = 5;
+
+/**
+ * Tours d'un arbre à élimination, désignés par leur nombre de matchs, comme dans leur nom :
+ * 1 pour la finale, 2 pour les demi-finales, 4 pour les quarts, 8 pour les 8es de finale…
+ * jusqu'au premier tour d'un arbre de 4096 places. Compter depuis la finale garde le même
+ * sens à chaque tour, quelle que soit la taille de l'arbre.
+ */
+export const ELIMINATION_ROUNDS = Array.from({ length: 12 }, (_, i) => 2 ** i);
+
+/** Nom d'un tour d'arbre à élimination, d'après son nombre de matchs. */
+export function eliminationRoundName(matchCount: number): string {
+  const names: Record<number, string> = {
+    1: 'Finale',
+    2: 'Demi-finales',
+    4: 'Quarts de finale',
+    8: 'Huitièmes de finale',
+  };
+  return names[matchCount] ?? `${matchCount}es de finale`;
+}
+
 /** Nombre maximum de phases d'un tournoi. */
 export const MAX_STAGES = 8;
 
@@ -69,6 +91,9 @@ const count = (min: number, max: number) => {
   return z.int(NUMBER_ERROR).min(min, message).max(max, message);
 };
 const bestOf = z.literal(BEST_OF_VALUES, 'Choisissez 1, 3, 5 ou 7 manches.');
+const eliminationRound = z.enum(ELIMINATION_ROUNDS.map(String) as [string, ...string[]], {
+  error: 'Tour inconnu.',
+});
 
 const commonSettings = {
   /** Participants qualifiés pour la phase suivante ; absent sur la dernière phase. */
@@ -76,7 +101,7 @@ const commonSettings = {
   seeding: z.enum(SEEDINGS).default('RANDOM'),
 };
 
-const duelSettings = { ...commonSettings, bestOf: bestOf.default(1) };
+const duelSettings = { ...commonSettings, bestOf: bestOf.default(DEFAULT_BEST_OF) };
 
 const stageBase = {
   name: z.string().trim().min(1, 'De 1 à 60 caractères.').max(60, 'De 1 à 60 caractères.'),
@@ -90,10 +115,12 @@ export const stageInputSchema = z.discriminatedUnion('format', [
     format: z.literal('SINGLE_ELIMINATION'),
     settings: z.object({
       ...duelSettings,
-      /** Formats des derniers tours, s'ils diffèrent du reste de la phase. */
-      quarterFinalBestOf: bestOf.optional(),
-      semiFinalBestOf: bestOf.optional(),
-      finalBestOf: bestOf.optional(),
+      /**
+       * Formats propres à certains tours, par nombre de matchs du tour (voir
+       * ELIMINATION_ROUNDS) : { "1": 7, "8": 3 } pour une finale en BO7 et des 8es en BO3.
+       * Les tours absents suivent `bestOf`.
+       */
+      roundBestOf: z.partialRecord(eliminationRound, bestOf).default({}),
       thirdPlaceMatch: z.boolean().default(false),
     }),
   }),

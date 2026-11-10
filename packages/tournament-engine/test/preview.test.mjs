@@ -32,8 +32,13 @@ describe('élimination simple', () => {
     assert.equal(preview.steps[0].detail, '4 exempts');
   });
 
-  it('numérote les tours d’un grand arbre', () => {
-    assert.equal(labels(stagePreview(stage('SINGLE_ELIMINATION'), 32))[0], 'Tour 1');
+  it('nomme les tours d’un grand arbre d’après leur nombre de matchs', () => {
+    assert.deepEqual(labels(stagePreview(stage('SINGLE_ELIMINATION'), 128)).slice(0, 4), [
+      '64es de finale',
+      '32es de finale',
+      '16es de finale',
+      'Huitièmes de finale',
+    ]);
   });
 
   it('s’arrête aux qualifiés, même en plein tour', () => {
@@ -43,7 +48,7 @@ describe('élimination simple', () => {
 
   it('applique le format de la finale et la petite finale', () => {
     const preview = stagePreview(
-      stage('SINGLE_ELIMINATION', { bestOf: 3, finalBestOf: 5, thirdPlaceMatch: true }),
+      stage('SINGLE_ELIMINATION', { bestOf: 3, roundBestOf: { 1: 5 }, thirdPlaceMatch: true }),
       4,
     );
     assert.deepEqual(
@@ -59,19 +64,32 @@ describe('élimination simple', () => {
 });
 
 describe('format selon le tour', () => {
-  it('applique les formats des derniers tours', () => {
+  it('joue tout en BO5 par défaut', () => {
+    const preview = stagePreview(stage('SINGLE_ELIMINATION'), 16);
+    assert.deepEqual(
+      preview.steps.map((step) => step.bestOf),
+      [5, 5, 5, 5],
+    );
+  });
+
+  it('applique le format propre à chaque tour, même au début d’un grand arbre', () => {
     const preview = stagePreview(
       stage('SINGLE_ELIMINATION', {
         bestOf: 1,
-        quarterFinalBestOf: 3,
-        semiFinalBestOf: 5,
-        finalBestOf: 7,
+        roundBestOf: { 1: 7, 2: 5, 16: 3 },
       }),
-      16,
+      64,
     );
     assert.deepEqual(
-      preview.steps.map((step) => step.bestOf),
-      [1, 3, 5, 7],
+      preview.steps.map(({ label, bestOf }) => [label, bestOf]),
+      [
+        ['32es de finale', 1],
+        ['16es de finale', 3],
+        ['Huitièmes de finale', 1],
+        ['Quarts de finale', 1],
+        ['Demi-finales', 5],
+        ['Finale', 7],
+      ],
     );
   });
 });
