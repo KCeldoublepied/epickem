@@ -6,23 +6,15 @@
  * isolément. Voir docs/adr/0008-moteur-de-tournois-strategy.md.
  */
 
-import type { StageInput } from '@epickem/shared';
+import { eliminationRoundName, type StageInput } from '@epickem/shared';
 
-/**
- * Taille de l'arbre d'élimination : plus petite puissance de 2
- * supérieure ou égale au nombre de participants.
- */
-export function bracketSize(participants: number): number {
-  if (!Number.isInteger(participants) || participants < 2) {
-    throw new RangeError('Un arbre nécessite au moins 2 participants.');
-  }
-  return 2 ** Math.ceil(Math.log2(participants));
-}
+import { bracketSize, byeCount } from './placement';
+import { bestOfForRound } from './single-elimination';
 
-/** Nombre d'exempts (byes) au premier tour d'un arbre d'élimination. */
-export function byeCount(participants: number): number {
-  return bracketSize(participants) - participants;
-}
+export * from './placement';
+export * from './seeding';
+export * from './single-elimination';
+export type * from './types';
 
 /** Une étape d'une phase : un tour d'arbre, un groupe de poules, l'ensemble des rondes… */
 export interface PreviewStep {
@@ -42,19 +34,11 @@ export interface StagePreview {
 
 const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? 's' : ''}`;
 
-const ROUND_NAMES: Record<number, string> = {
-  1: 'Finale',
-  2: 'Demi-finales',
-  4: 'Quarts de finale',
-  8: 'Huitièmes de finale',
-};
-
 function eliminationRounds(
   entrants: number,
   qualifiers: number,
-  bestOf: number,
-  /** Formats propres aux derniers tours, selon le nombre de matchs du tour dans l'arbre. */
-  bestOfBySlots: Record<number, number | undefined> = {},
+  /** Format d'un tour, selon son nombre de matchs dans l'arbre complet. */
+  bestOfFor: (matchCount: number) => number,
 ): PreviewStep[] {
   const steps: PreviewStep[] = [];
   const byes = byeCount(entrants);
@@ -65,9 +49,9 @@ function eliminationRounds(
     // Au premier tour, les exempts ne jouent pas ; le dernier tour s'arrête aux qualifiés.
     const matches = Math.min(remaining - slots, remaining - qualifiers);
     steps.push({
-      label: ROUND_NAMES[slots] ?? `Tour ${round}`,
+      label: eliminationRoundName(slots),
       matches,
-      bestOf: bestOfBySlots[slots] ?? bestOf,
+      bestOf: bestOfFor(slots),
       ...(round === 1 && byes > 0 && { detail: plural(byes, 'exempt') }),
     });
     remaining -= matches;
@@ -109,15 +93,12 @@ export function stagePreview(
 
   switch (stage.format) {
     case 'SINGLE_ELIMINATION': {
-      const { bestOf, quarterFinalBestOf, semiFinalBestOf, finalBestOf, thirdPlaceMatch } =
-        stage.settings;
-      const steps = eliminationRounds(entrants, qualifiers, bestOf, {
-        1: finalBestOf,
-        2: semiFinalBestOf,
-        4: quarterFinalBestOf,
-      });
-      if (thirdPlaceMatch && qualifiers === 1 && entrants >= 4) {
-        steps.push({ label: 'Petite finale', matches: 1, bestOf });
+      const { settings } = stage;
+      const steps = eliminationRounds(entrants, qualifiers, (matchCount) =>
+        bestOfForRound(settings, matchCount),
+      );
+      if (settings.thirdPlaceMatch && qualifiers === 1 && entrants >= 4) {
+        steps.push({ label: 'Petite finale', matches: 1, bestOf: settings.bestOf });
       }
       return fixed(steps);
     }

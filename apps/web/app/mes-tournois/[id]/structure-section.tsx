@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import {
   BEST_OF_VALUES,
+  DEFAULT_BEST_OF,
   defaultStage,
+  eliminationRoundName,
   gameFormats,
   MAX_STAGES,
   ROUND_ROBIN_TIE_BREAKERS,
@@ -15,6 +17,7 @@ import {
   TIE_BREAKER_LABELS,
   TIE_BREAKERS,
 } from '@epickem/shared';
+import { bracketSize } from '@epickem/tournament-engine';
 
 import {
   CheckboxField,
@@ -33,6 +36,28 @@ import { StructureFlow } from './structure-flow';
 
 const BEST_OF_OPTIONS = BEST_OF_VALUES.map((value) => [String(value), `BO${value}`] as const);
 const SEEDING_OPTIONS = SEEDINGS.map((value) => [value, SEEDING_LABELS[value]] as const);
+
+/** Premier tour proposé quand le nombre de participants n'est pas encore connu : les 8es. */
+const DEFAULT_FIRST_ROUND = 8;
+
+/**
+ * Tours joués d'une phase à élimination simple, du premier à la finale, chacun désigné par son
+ * nombre de matchs. Un tour est joué tant qu'il reste plus de participants que de qualifiés.
+ * Les tours déjà réglés restent affichés, pour que l'organisateur puisse les retirer.
+ */
+function playedRounds(
+  entrants: number | undefined,
+  qualifiers: number | undefined,
+  configured: string[],
+): number[] {
+  const firstRound =
+    entrants !== undefined && entrants >= 2 ? bracketSize(entrants) / 2 : DEFAULT_FIRST_ROUND;
+  const rounds = new Set(configured.map(Number));
+  for (let matchCount = firstRound; matchCount >= 1; matchCount /= 2) {
+    if (2 * matchCount > (qualifiers ?? 1)) rounds.add(matchCount);
+  }
+  return [...rounds].sort((a, b) => b - a);
+}
 
 let lastKey = 0;
 const newKey = () => `nouvelle-phase-${++lastKey}`;
@@ -219,28 +244,57 @@ function StageEditor({
     <SelectField
       path={`${path}.settings.bestOf`}
       label="Format des matchs"
-      value={String(settings.bestOf ?? 1)}
+      value={String(settings.bestOf ?? DEFAULT_BEST_OF)}
       onChange={(value) => set('bestOf', Number(value))}
       errors={errors}
       options={BEST_OF_OPTIONS}
     />
   );
 
-  const roundBestOf = (key: string, label: string) => (
+  // Grande finale de la double élimination.
+  const finalBestOf = (
     <SelectField
-      path={`${path}.settings.${key}`}
-      label={label}
-      value={settings[key] === undefined ? undefined : String(settings[key])}
-      onChange={(value) => set(key, value === undefined ? undefined : Number(value))}
+      path={`${path}.settings.finalBestOf`}
+      label="Format de la finale"
+      value={settings.finalBestOf === undefined ? undefined : String(settings.finalBestOf)}
+      onChange={(value) => set('finalBestOf', value === undefined ? undefined : Number(value))}
       errors={errors}
       emptyLabel="Comme les autres matchs"
       options={BEST_OF_OPTIONS}
     />
   );
-  const finalBestOf = roundBestOf('finalBestOf', 'Format de la finale');
 
   const groups = (settings.groupCount as number | undefined) ?? 1;
   const qualifiers = settings.qualifiers as number | undefined;
+
+  // Format propre à chaque tour de l'arbre (élimination simple), par nombre de matchs du tour.
+  const roundBestOf = (settings.roundBestOf as Record<string, number> | undefined) ?? {};
+  function setRoundBestOf(matchCount: number, value: number | undefined) {
+    const { [matchCount]: _previous, ...others } = roundBestOf;
+    set('roundBestOf', value === undefined ? others : { ...others, [matchCount]: value });
+  }
+  const roundFormats = playedRounds(
+    entrants,
+    isLast ? undefined : qualifiers,
+    Object.keys(roundBestOf),
+  ).map((matchCount) => (
+    <SelectField
+      key={matchCount}
+      path={`${path}.settings.roundBestOf.${matchCount}`}
+      label={
+        matchCount === 1
+          ? 'Format de la finale'
+          : `Format des ${eliminationRoundName(matchCount).toLowerCase()}`
+      }
+      value={roundBestOf[matchCount] === undefined ? undefined : String(roundBestOf[matchCount])}
+      onChange={(value) =>
+        setRoundBestOf(matchCount, value === undefined ? undefined : Number(value))
+      }
+      errors={errors}
+      emptyLabel="Comme les autres matchs"
+      options={BEST_OF_OPTIONS}
+    />
+  ));
 
   const tieBreaker = (
     <SelectField
@@ -316,9 +370,7 @@ function StageEditor({
       {stage.format === 'SINGLE_ELIMINATION' && (
         <>
           {bestOf}
-          {roundBestOf('quarterFinalBestOf', 'Format des quarts de finale')}
-          {roundBestOf('semiFinalBestOf', 'Format des demi-finales')}
-          {finalBestOf}
+          {roundFormats}
           <CheckboxField
             path={`${path}.settings.thirdPlaceMatch`}
             label="Match pour la 3e place"
